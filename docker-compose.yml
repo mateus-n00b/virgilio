@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: virgilio
+      POSTGRES_PASSWORD: virgilio
+      POSTGRES_DB: virgilio
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U virgilio"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://virgilio:virgilio@db:5432/virgilio
+    ports: ["8001:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  # Varredura a cada 15 minutos (no lugar do Vercel Cron)
+  cron:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://virgilio:virgilio@db:5432/virgilio
+    command: ["sh", "-c", "while true; do python -m app.cli sweep; sleep 900; done"]
+    depends_on: [api]
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://api:8000
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports: ["3001:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
