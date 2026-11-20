@@ -52,7 +52,7 @@ export function inviteMessage(guardianName: string, myName: string, url: string)
   return (
     `Oi, ${first}! Uso o Virgílio, um app de prova de vida para quem mora só ou longe da família. ` +
     `Você aceita ser meu Virgílio? Você só recebe um aviso se eu passar alguns dias sem dar sinal de vida, ` +
-    `com instruções do que fazer. Não precisa instalar nada: ${url}\n— ${myName}`
+    `com instruções do que fazer. Não precisa instalar nada: ${url}\nAbraço, ${myName}`
   );
 }
 

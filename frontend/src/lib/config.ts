@@ -8,6 +8,7 @@ const FALLBACK: AppConfig = {
   web_url: "",
   mail_enabled: false,
   support_email: "anonimizae@proton.me",
+  android_apk_url: null,
   limits: { max_interval_days: 30, max_grace_days: 14, max_pause_days: 60, max_guardians: 5, max_instructions: 20 },
 };
 

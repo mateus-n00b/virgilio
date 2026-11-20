@@ -19,6 +19,7 @@ export interface AppConfig {
   web_url: string;
   mail_enabled: boolean;
   support_email: string;
+  android_apk_url: string | null;
   limits: {
     max_interval_days: number;
     max_grace_days: number;

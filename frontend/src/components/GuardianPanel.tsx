@@ -81,8 +81,8 @@ export function GuardianPanel({ token }: { token: string }) {
         <div className="card">
           <p>
             O Virgílio é um app de prova de vida para quem mora só ou longe da família. {first} confirma de tempos em tempos que está bem.
-            Se passar do prazo sem responder, <strong>você recebe um aviso</strong> com as instruções que {first} deixou — por exemplo, quem chamar
-            ou como entrar em casa — e a última localização conhecida, se houver.
+            Se passar do prazo sem responder, <strong>você recebe um aviso</strong> com as instruções que {first} deixou (por exemplo, quem chamar
+            ou como entrar em casa) e a última localização conhecida, se houver.
           </p>
           <p className="muted small">
             Enquanto estiver tudo bem, você não recebe nada e não vê dados pessoais de {first}. Você pode deixar de ser Virgílio quando quiser.

@@ -1,0 +1,27 @@
+# Varredura de hora em hora (lembretes e alertas no horário certo).
+# O Vercel Cron do plano Hobby só roda 1x por dia; este workflow complementa de graça.
+# Configure em Settings → Secrets and variables → Actions:
+#   VIRGILIO_URL  = https://<seu-dominio>   (sem barra no final)
+#   CRON_SECRET   = o mesmo valor definido na Vercel
+name: Varredura de provas de vida
+
+on:
+  schedule:
+    - cron: "7 * * * *" # minuto 7 de cada hora (evita o pico do minuto 0 no GitHub)
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar /api/internal/sweep
+        env:
+          VIRGILIO_URL: ${{ secrets.VIRGILIO_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$VIRGILIO_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Defina os secrets VIRGILIO_URL e CRON_SECRET"; exit 0
+          fi
+          curl -fsS --retry 3 --retry-delay 20 --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" "$VIRGILIO_URL/api/internal/sweep"

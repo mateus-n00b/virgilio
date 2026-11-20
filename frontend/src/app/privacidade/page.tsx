@@ -11,8 +11,8 @@ export default function PrivacyPage() {
       <h2>Dados que tratamos</h2>
       <ul>
         <li>Seus: nome, e-mail, senha (guardada apenas como hash), telefone e endereço (opcionais), datas das provas de vida.</li>
-        <li>Instruções que você escreve — guardadas criptografadas.</li>
-        <li>Localização, <strong>somente quando você escolhe compartilhá-la</strong> numa prova de vida ou pedido de ajuda — guardada criptografada; apenas a última é mantida.</li>
+        <li>Instruções que você escreve, guardadas criptografadas.</li>
+        <li>Localização, <strong>somente quando você escolhe compartilhá-la</strong> numa prova de vida ou pedido de ajuda. Ela fica criptografada e só a última é mantida.</li>
         <li>Dos seus Virgílios: nome, e-mail e telefone que você ou eles informaram.</li>
       </ul>
       <h2>Para que usamos</h2>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { AppDownload } from "@/components/AppDownload";
 import { Alert, Badge, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -23,7 +24,7 @@ function Landing() {
           <h1>Ninguém atravessa sozinho.</h1>
           <p className="lead">
             Mora só ou longe da família? O Virgílio pede uma prova de vida de tempos em tempos. Se você não responder, avisamos as pessoas
-            próximas que você escolheu — seus <strong>Virgílios</strong> — com as instruções que você deixou.
+            próximas que você escolheu, seus <strong>Virgílios</strong>, com as instruções que você deixou.
           </p>
           <div className="row mt">
             <Link href="/entrar?criar=1" className="btn">
@@ -36,7 +37,7 @@ function Landing() {
         </div>
         <blockquote>
           “Ond’io per lo tuo me’ penso e discerno che tu mi segui, e io sarò tua guida.”
-          <cite>— Virgílio a Dante, Inferno, Canto I. Na Divina Comédia, Virgílio é quem guia e cuida de Dante na travessia.</cite>
+          <cite>Virgílio a Dante, Inferno, Canto I. Na Divina Comédia, Virgílio é quem guia e cuida de Dante na travessia.</cite>
         </blockquote>
       </section>
 
@@ -63,6 +64,9 @@ function Landing() {
           Instruções e localização ficam criptografadas e só são reveladas aos seus Virgílios durante um alerta. Enquanto está tudo bem, eles
           só sabem que você está bem.
         </p>
+      </div>
+      <div className="mt">
+        <AppDownload />
       </div>
     </>
   );
@@ -165,7 +169,7 @@ function Dashboard({ user }: { user: User }) {
           />
           <span>
             Compartilhar minha localização atual
-            <span className="muted"> — só revelada aos Virgílios em caso de alerta</span>
+            <span className="muted"> (só revelada aos Virgílios em caso de alerta)</span>
           </span>
         </label>
 
@@ -233,6 +237,7 @@ function Dashboard({ user }: { user: User }) {
           </p>
         </Link>
       </div>
+      <AppDownload />
     </div>
   );
 }

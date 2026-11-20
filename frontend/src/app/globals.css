@@ -209,3 +209,7 @@ button.link { background: none; border: none; font: inherit; cursor: pointer; pa
 dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
 dl.facts dt { color: var(--muted); }
 dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Download do app Android */
+.app-download { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.app-download > div { flex: 1 1 280px; }

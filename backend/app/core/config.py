@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = ""  # ex.: "Virgílio <nao-responda@seudominio.com.br>"
+    # Link de download do APK Android exibido no site (ex.: release do GitHub). Vazio = botão oculto.
+    android_apk_url: str = ""
     support_email: str = "anonimizae@proton.me"  # contato exibido no site (mesmo do promoAE)
 
     rate_limit_enabled: bool = True

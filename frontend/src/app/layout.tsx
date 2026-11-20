@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { AppDownload } from "@/components/AppDownload";
 import { Header } from "@/components/Header";
 import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Virgílio — ninguém atravessa sozinho",
+  title: "Virgílio: ninguém atravessa sozinho",
   description:
     "Prova de vida periódica para quem mora só ou longe da família. Se você não responder, seus Virgílios (amigos, vizinhos, conhecidos) são avisados com as suas instruções.",
 };
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 © Virgílio · <em>ninguém atravessa sozinho</em>
               </span>
               <span className="row">
+                <AppDownload variant="link" />
                 <Link href="/termos">Termos de Uso</Link>
                 <Link href="/privacidade">Política de Privacidade</Link>
               </span>

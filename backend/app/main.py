@@ -53,6 +53,7 @@ def public_config() -> dict:
         "web_url": s.web_url,
         "mail_enabled": mail_configured(),
         "support_email": s.support_email,
+        "android_apk_url": s.android_apk_url or None,
         "limits": {
             "max_interval_days": s.max_interval_days,
             "max_grace_days": s.max_grace_days,

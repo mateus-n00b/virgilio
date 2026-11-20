@@ -19,7 +19,7 @@ export default function HomeScreen() {
         <Text style={[styles.h1, { fontFamily: "serif" }]}>Ninguém atravessa sozinho.</Text>
         <Text style={styles.text}>
           Mora só ou longe da família? O Virgílio pede uma prova de vida de tempos em tempos. Se você não responder, avisamos as pessoas
-          próximas que você escolheu — seus Virgílios — com as instruções que você deixou.
+          próximas que você escolheu, seus Virgílios, com as instruções que você deixou.
         </Text>
         <SignInPrompt message="Crie sua conta para começar." />
       </ScrollView>
@@ -177,7 +177,7 @@ function Dashboard({ firstName }: { firstName: string }) {
         <View style={[styles.row, { alignSelf: "stretch" }]}>
           <Switch value={share} onValueChange={toggleShare} trackColor={{ true: colors.brand }} accessibilityLabel="Compartilhar minha localização" />
           <Text style={[styles.small, { flex: 1 }]}>
-            Compartilhar minha localização atual — só revelada aos Virgílios em caso de alerta
+            Compartilhar minha localização atual (só revelada aos Virgílios em caso de alerta)
           </Text>
         </View>
 
