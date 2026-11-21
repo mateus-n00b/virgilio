@@ -78,7 +78,8 @@ class Settings(BaseSettings):
 
     @property
     def web_url(self) -> str:
-        return self.frontend_url.rstrip("/")
+        # strip(): variável colada no painel da Vercel com quebra de linha no fim quebrava os links dos e-mails
+        return self.frontend_url.strip().rstrip("/")
 
     @property
     def cors_origin_list(self) -> list[str]:

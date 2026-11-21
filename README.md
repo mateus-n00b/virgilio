@@ -80,7 +80,7 @@ Igual ao promoAE: **um projeto Vercel** com os serviços do [vercel.json](vercel
 4. **Variáveis**: preencha as de [.env.vercel.example](.env.vercel.example). Obrigatórias: `ENV=prod`, `JWT_SECRET` (32+), `FRONTEND_URL`, `INSTRUCTIONS_KEY`, `CRON_SECRET` e os `SMTP_*`. Faça *Redeploy* depois de alterar. Teste em `https://<domínio>/api/health`.
 5. **Varredura (cron)** — é ela que manda lembretes e alertas:
    - O `vercel.json` já agenda `/api/internal/sweep` **1x por dia** (limite do plano Hobby). A Vercel envia `Authorization: Bearer <CRON_SECRET>` sozinha.
-   - Para lembretes e alertas **no horário certo**, ative também o workflow [.github/workflows/sweep.yml](.github/workflows/sweep.yml), que chama a mesma rota **de hora em hora**, de graça: em *Settings → Secrets → Actions* do GitHub, crie `VIRGILIO_URL` (ex.: `https://virgilio.vercel.app`) e `CRON_SECRET`. No plano Pro da Vercel, dá para trocar o cron para `0 * * * *`.
+   - Para lembretes e alertas **no horário certo**, ative também o workflow [.github/workflows/sweep.yml](.github/workflows/sweep.yml), que chama a mesma rota **de hora em hora**, de graça: em *Settings → Secrets → Actions* do GitHub, crie `VIRGILIO_URL` (ex.: `https://virgilio-alpha.vercel.app`) e `CRON_SECRET`. No plano Pro da Vercel, dá para trocar o cron para `0 * * * *`.
    - Só com o cron diário, o alerta pode sair até ~1 dia depois de *x + y*.
 6. **App mobile**: build com `EXPO_PUBLIC_API_URL=https://<domínio>/api` ([mobile/README.md](mobile/README.md)).
 

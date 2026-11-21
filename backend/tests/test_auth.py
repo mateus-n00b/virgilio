@@ -84,3 +84,11 @@ def test_delete_account_removes_everything(api, db_session_factory, outbox):
         assert db.scalars(select(Watch)).all() != []  # a da outra pessoa
         remaining = db.scalars(select(Guardian)).all()
         assert [(x.name, x.linked_user_id) for x in remaining] == [("Sai", None)]
+
+
+def test_frontend_url_with_trailing_newline_is_cleaned():
+    """Variável colada no painel da Vercel com quebra de linha não pode quebrar os links dos e-mails."""
+    from app.core.config import Settings
+
+    assert Settings(frontend_url="https://virgilio-alpha.vercel.app\n").web_url == "https://virgilio-alpha.vercel.app"
+    assert Settings(frontend_url=" https://x.app/ ").web_url == "https://x.app"
