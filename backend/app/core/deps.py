@@ -33,6 +33,13 @@ def get_current_user(
     return user
 
 
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Painel /admin: só contas cujo e-mail está em ADMIN_EMAILS."""
+    if not user.is_admin:
+        raise AppError(403, "forbidden", "Acesso restrito à administração.")
+    return user
+
+
 def get_optional_user(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),

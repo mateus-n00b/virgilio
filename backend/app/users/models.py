@@ -4,6 +4,7 @@ from enum import StrEnum
 from sqlalchemy import CheckConstraint, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.crypto import EncryptedText
 from app.core.db import Base, UTCDateTime, utcnow
 
 
@@ -24,13 +25,20 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))  # scrypt (app.core.security)
     # Incrementado ao redefinir a senha: invalida todas as sessões e links de redefinição anteriores
     token_version: Mapped[int] = mapped_column(Integer, default=0)
-    # Mostrados aos Virgílios só durante um alerta, para que saibam como chegar e quem chamar
-    phone: Mapped[str | None] = mapped_column(String(30))
-    address: Mapped[str | None] = mapped_column(String(255))
+    # Mostrados aos Virgílios só durante um alerta, para que saibam como chegar e quem chamar.
+    # Cifrados: "mora sozinho" + endereço é o dado mais perigoso do sistema num vazamento.
+    phone: Mapped[str | None] = mapped_column(EncryptedText)
+    address: Mapped[str | None] = mapped_column(EncryptedText)
     status: Mapped[str] = mapped_column(String(20), default=UserStatus.ACTIVE)
     terms_accepted_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     last_login_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    @property
+    def is_admin(self) -> bool:
+        from app.core.config import get_settings
+
+        return self.email.lower() in get_settings().admin_email_set
 
     @property
     def first_name(self) -> str:

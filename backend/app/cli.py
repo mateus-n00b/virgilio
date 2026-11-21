@@ -16,7 +16,13 @@ def main(argv: list[str]) -> None:
     cmd = argv[1] if len(argv) > 1 else ""
     with SessionLocal() as db:
         if cmd == "sweep":
-            print(json.dumps({**watch.sweep(db), **notify.dispatch(db, limit=5000)}))
+            from app.admin import service as admin
+
+            out = {**watch.sweep(db), **notify.dispatch(db, limit=5000)}
+            out["encrypted_legacy"] = admin.encrypt_legacy(db)
+            out["purged"] = admin.purge_expired(db)
+            out["snapshot"] = admin.snapshot_daily(db)
+            print(json.dumps(out))
         elif cmd == "dispatch":
             print(json.dumps(notify.dispatch(db, limit=5000)))
         else:

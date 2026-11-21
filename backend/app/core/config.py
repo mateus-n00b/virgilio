@@ -39,6 +39,16 @@ class Settings(BaseSettings):
     # Quantas vezes, no máximo, os Virgílios são avisados de um mesmo alerta sem resposta
     max_alert_notifications: int = 7
 
+    # Administradores: e-mails das contas com acesso ao painel /admin (separados por vírgula).
+    # O admin vê estatísticas e dados operacionais; nunca instruções, localização, endereço,
+    # telefone ou contatos dos Virgílios.
+    admin_emails: str = ""
+
+    # Retenção (LGPD: guardar só pelo tempo necessário). 0 = nunca apagar.
+    retention_deliveries_days: int = 90  # fila de avisos já processados
+    retention_alerts_days: int = 365  # alertas encerrados
+    retention_declined_guardians_days: int = 30  # Virgílios que recusaram ou saíram
+
     # Segredo do cron (Authorization: Bearer <CRON_SECRET>); vazio = rota de varredura desativada
     cron_secret: str = ""
 
@@ -80,6 +90,10 @@ class Settings(BaseSettings):
     def web_url(self) -> str:
         # strip(): variável colada no painel da Vercel com quebra de linha no fim quebrava os links dos e-mails
         return self.frontend_url.strip().rstrip("/")
+
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     @property
     def cors_origin_list(self) -> list[str]:

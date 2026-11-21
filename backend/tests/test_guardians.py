@@ -38,11 +38,17 @@ def test_guardian_without_email_must_give_one_to_accept(api, outbox):
     assert r.status_code == 200 and r.json()["guardian_email"] == "jorge@example.com"
 
 
-def test_decline_and_resend(api, outbox):
+def test_decline_erases_contact_and_resend_needs_new_email(api, outbox):
+    """Quem recusa tem o contato apagado na hora (minimização); reenviar exige cadastrar de novo."""
     token = api.register()
-    g = api.add_guardian(token)
+    g = api.add_guardian(token, phone="71 98888-0000", relation="vizinha")
     assert api.c.post(f"/api/guardian/{token_of(g)}/decline").json()["status"] == "DECLINED"
-    assert api.c.get("/api/me/guardians", headers=api.h(token)).json()[0]["status"] == "DECLINED"
+    listed = api.c.get("/api/me/guardians", headers=api.h(token)).json()[0]
+    assert listed["status"] == "DECLINED" and listed["name"] == "Dona Neide"
+    assert (listed["email"], listed["phone"], listed["relation"]) == (None, None, None)
+    r = api.c.post(f"/api/me/guardians/{g['id']}/resend", headers=api.h(token))
+    assert r.status_code == 422 and r.json()["detail"]["code"] == "no_email"
+    api.c.put(f"/api/me/guardians/{g['id']}", headers=api.h(token), json={"name": "Dona Neide", "email": "neide@example.com"})
     r = api.c.post(f"/api/me/guardians/{g['id']}/resend", headers=api.h(token))
     assert r.status_code == 200 and r.json()["status"] == "PENDING"
     assert len(outbox["emails"]) == 2
@@ -180,3 +186,16 @@ def test_link_invites_count_toward_limit(api, outbox):
     for _ in range(5):
         assert api.c.post("/api/me/guardians/link", headers=api.h(token)).status_code == 201
     assert api.c.post("/api/me/guardians/link", headers=api.h(token)).status_code == 409
+
+
+def test_link_app_account_after_accepting_logged_out(api, outbox):
+    """Aceitou deslogado (só e-mail) e depois vincula a conta pelo mesmo link: passa a ver em Protegidos."""
+    person = api.register(name="Beatriz")
+    me = api.register(name="Neide", email="neide@example.com")
+    g = api.add_guardian(person, "Dona Neide", None)
+    assert api.c.post(f"/api/guardian/{token_of(g)}/accept", json={"email": "neide@example.com"}).status_code == 200
+    assert api.c.get("/api/me/protecting", headers=api.h(me)).json() == []  # só pelo e-mail, sem prova do link
+
+    r = api.c.post(f"/api/guardian/{token_of(g)}/accept", headers=api.h(me), json={"link_account": True})
+    assert r.status_code == 200 and r.json()["has_app"] is True and r.json()["status"] == "ACCEPTED"
+    assert [p["person_name"] for p in api.c.get("/api/me/protecting", headers=api.h(me)).json()] == ["Beatriz"]

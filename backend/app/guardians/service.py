@@ -196,8 +196,13 @@ def accept(db: Session, g: Guardian, person: User, email: str | None, link_to: U
 
 
 def decline(db: Session, g: Guardian) -> None:
-    """Recusa o convite ou deixa de ser Virgílio. A pessoa protegida vê o status no app."""
+    """Recusa o convite ou deixa de ser Virgílio. A pessoa protegida vê o status no app.
+
+    Minimização (LGPD): o contato de quem recusou é apagado na hora; o nome fica para a pessoa
+    protegida ver quem recusou e o registro some após RETENTION_DECLINED_GUARDIANS_DAYS.
+    """
     g.status, g.responded_at, g.linked_user_id = GuardianStatus.DECLINED, utcnow(), None
+    g.email = g.phone = g.relation = None
     db.commit()
 
 

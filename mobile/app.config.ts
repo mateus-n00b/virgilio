@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Virgílio",
   slug: "virgilio",
   scheme: "virgilio",
-  version: "1.0.2",
+  version: "1.0.3",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -28,7 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: env.ANDROID_PACKAGE || "br.com.virgilio.app",
     // Aumente a cada APK publicado: o Android só instala por cima uma versão maior
-    versionCode: 3,
+    versionCode: 4,
     adaptiveIcon: {
       backgroundColor: "#2F6B4F",
       foregroundImage: "./assets/android-icon-foreground.png",

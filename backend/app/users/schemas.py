@@ -25,6 +25,7 @@ class UserOut(BaseModel):
     phone: str | None
     address: str | None
     created_at: datetime
+    is_admin: bool = False
 
 
 class RegisterIn(BaseModel):

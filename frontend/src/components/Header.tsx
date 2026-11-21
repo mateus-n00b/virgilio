@@ -28,6 +28,7 @@ export function Header() {
               {link("/virgilios", "Meus Virgílios")}
               {link("/instrucoes", "Instruções")}
               {link("/protegidos", "Protegidos")}
+              {user.is_admin && link("/admin", "Admin")}
               {link("/conta", user.name.split(" ")[0])}
               <button
                 className="link"

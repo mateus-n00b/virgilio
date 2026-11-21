@@ -7,6 +7,7 @@ export interface User {
   phone: string | null;
   address: string | null;
   created_at: string;
+  is_admin?: boolean;
 }
 
 export interface AuthResponse {

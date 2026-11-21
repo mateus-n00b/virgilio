@@ -1,4 +1,5 @@
 """Importa todos os modelos para registrar as tabelas no metadata (Alembic e testes)."""
+from app.admin.models import AuditEvent, DailyStat  # noqa: F401
 from app.guardians.models import Guardian  # noqa: F401
 from app.instructions.models import Instruction  # noqa: F401
 from app.notify.models import Delivery, PushToken  # noqa: F401

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.models  # noqa: F401  (registra modelos)
+from app.admin.router import router as admin_router
 from app.core.config import check_production_settings, get_settings
 from app.core.mailer import mail_configured
 from app.guardians.router import router as guardians_router
@@ -36,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (users_router, watch_router, guardians_router, instructions_router, notify_router):
+for r in (users_router, watch_router, guardians_router, instructions_router, notify_router, admin_router):
     app.include_router(r, prefix="/api")
 
 

@@ -4,6 +4,7 @@ from enum import StrEnum
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.crypto import EncryptedText
 from app.core.db import Base, UTCDateTime, utcnow
 
 
@@ -25,11 +26,12 @@ class Guardian(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # quem é protegido
-    # Vazio = convite por link ainda não aceito: quem aceitar informa o próprio nome
-    name: Mapped[str] = mapped_column(String(120))
-    email: Mapped[str | None] = mapped_column(String(254))
-    phone: Mapped[str | None] = mapped_column(String(30))
-    relation: Mapped[str | None] = mapped_column(String(60))  # vizinha, amigo, primo...
+    # Dados de terceiros, todos cifrados (app.core.crypto.EncryptedText); limites de tamanho nos esquemas.
+    # Nome vazio = convite por link ainda não aceito: quem aceitar informa o próprio nome
+    name: Mapped[str] = mapped_column(EncryptedText)
+    email: Mapped[str | None] = mapped_column(EncryptedText)
+    phone: Mapped[str | None] = mapped_column(EncryptedText)
+    relation: Mapped[str | None] = mapped_column(EncryptedText)  # vizinha, amigo, primo...
     token: Mapped[str] = mapped_column(String(64), unique=True)
     status: Mapped[str] = mapped_column(String(20), default=GuardianStatus.PENDING, index=True)
     linked_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)

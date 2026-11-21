@@ -89,6 +89,20 @@ Igual ao promoAE: **um projeto Vercel** com os serviços do [vercel.json](vercel
 - **Não troque `INSTRUCTIONS_KEY`** depois de ter dados: instruções e localizações gravadas ficariam ilegíveis.
 - Os limites por IP ficam em memória (valem por instância serverless), como no promoAE.
 
+## Administração
+
+Contas cujo e-mail está em `ADMIN_EMAILS` veem o painel `/admin` no site (só no site): usuários ativos em 24 h, 7 e 30 dias (pela prova de vida), série diária, ciclos em cada estado, alertas, avisos enviados e com falha, busca de usuários com detalhe operacional e ações (suspender ou reativar com motivo, reenviar avisos com falha, rodar a varredura). A série histórica vem de uma foto diária agregada (`daily_stats`), sem guardar a atividade individual de ninguém.
+
+Por desenho, o painel **nunca** mostra instruções, localização, endereço, telefone nem nome e contato dos Virgílios, e toda ação administrativa fica em `audit_events`.
+
+## Privacidade dos dados
+
+- Cifrados no banco (Fernet, chave `INSTRUCTIONS_KEY`): instruções, última localização, telefone e endereço da pessoa e todos os dados dos Virgílios (nome, e-mail, telefone, relação). Só o e-mail da conta fica em claro, porque é a chave do login.
+- Dados gravados antes da migração `0002` continuam legíveis e são cifrados automaticamente pela varredura.
+- Quem recusa ou deixa de ser Virgílio tem o contato apagado na hora; o registro some após 30 dias.
+- Retenção: avisos processados 90 dias, alertas encerrados 365 dias (`RETENTION_*`).
+- Vínculo de um convite à conta do app só com o link do convite (o e-mail das contas não é verificado, então não há vínculo automático por e-mail).
+
 ## Testes
 
 ```bash

@@ -213,3 +213,26 @@ dl.facts dd { margin: 0; overflow-wrap: anywhere; }
 /* Download do app Android */
 .app-download { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .app-download > div { flex: 1 1 280px; }
+
+/* Painel administrativo */
+:root { --chart-bar: #1f8a55; }
+@media (prefers-color-scheme: dark) { :root { --chart-bar: #43a874; } }
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.tile .label { font-size: .8rem; color: var(--muted); }
+.tile .value { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1.2; }
+.tile .sub { font-size: .8rem; color: var(--muted); }
+.bars { position: relative; display: flex; align-items: flex-end; gap: 2px; height: 160px; padding-top: 8px; border-bottom: 1px solid var(--border); }
+.bars .bar { flex: 1; display: flex; align-items: flex-end; height: 100%; cursor: default; }
+.bars .bar span { display: block; width: 100%; min-height: 2px; background: var(--chart-bar); border-radius: 4px 4px 0 0; }
+.bars .bar:hover span, .bars .bar:focus span { filter: brightness(1.15); }
+.bars .tip { position: absolute; top: -6px; transform: translate(-50%, -100%); background: var(--text); color: var(--bg); font-size: .78rem; padding: 4px 8px; border-radius: 8px; white-space: nowrap; pointer-events: none; }
+.axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td, tr.selected td { background: var(--surface-2); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }

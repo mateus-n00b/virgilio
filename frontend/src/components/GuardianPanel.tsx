@@ -149,6 +149,28 @@ export function GuardianPanel({ token }: { token: string }) {
       <h1>{a ? `${first} precisa de você` : `Você é Virgílio de ${v.person.name}`}</h1>
       <Alert>{error}</Alert>
 
+      {!v.has_app && (
+        <div className="card app-download">
+          <div>
+            <h3 style={{ marginBottom: 2 }}>Acompanhar pelo app</h3>
+            <p className="muted small" style={{ margin: 0 }}>
+              {user
+                ? `Vincule este convite à sua conta (${user.email}) para ver ${first} em Protegidos e receber os alertas também como notificação.`
+                : `Tem conta no Virgílio? Entre e abra este link de novo para ver ${first} em Protegidos e receber notificações.`}
+            </p>
+          </div>
+          {user ? (
+            <button className="btn" disabled={busy} onClick={() => act("accept", { link_account: true })}>
+              Vincular à minha conta
+            </button>
+          ) : (
+            <Link className="btn secondary" href={`/entrar?next=${encodeURIComponent(`/v/${token}`)}`}>
+              Entrar
+            </Link>
+          )}
+        </div>
+      )}
+
       {!a && v.watch && (
         <div className="card">
           <p style={{ marginBottom: 4 }}>

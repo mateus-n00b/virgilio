@@ -108,5 +108,11 @@ def sweep(request: Request, db: Session = Depends(get_db)) -> dict:
     given = request.headers.get("authorization", "")
     if not hmac.compare_digest(given.encode(), f"Bearer {secret}".encode()):
         raise AppError(401, "unauthorized", "Não autorizado.")
+    from app.admin import service as admin
+
     stats = service.sweep(db)
-    return {**stats, **notify.dispatch(db, limit=5000)}
+    out = {**stats, **notify.dispatch(db, limit=5000)}
+    out["encrypted_legacy"] = admin.encrypt_legacy(db)
+    out["purged"] = admin.purge_expired(db)
+    out["snapshot"] = admin.snapshot_daily(db)
+    return out
