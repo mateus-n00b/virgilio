@@ -82,6 +82,8 @@ export interface Guardian {
   relation: string | null;
   status: GuardianStatus;
   has_app: boolean;
+  /** Convite por link ainda sem nome: quem aceitar informa nome e e-mail. */
+  open_invite: boolean;
   invite_url: string;
   created_at: string;
   responded_at: string | null;
@@ -108,6 +110,7 @@ export interface GuardianView {
   guardian_email: string | null;
   status: GuardianStatus;
   has_app: boolean;
+  needs_name: boolean;
   person: { name: string; first_name: string };
   watch: { state: WatchState; paused: boolean; last_check_in_at: string; interval_days: number; due_at: string } | null;
   alert: AlertInfo | null;

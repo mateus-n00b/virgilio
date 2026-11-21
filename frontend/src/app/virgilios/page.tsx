@@ -5,7 +5,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { Alert, Badge, Empty, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAppConfig } from "@/lib/config";
-import { GUARDIAN_STATUS, inviteMessage, whatsappLink } from "@/lib/format";
+import { dateTime, GUARDIAN_STATUS, inviteMessage, whatsappLink } from "@/lib/format";
 import type { Guardian, GuardianInput, User } from "@/lib/types";
 
 const EMPTY: GuardianInput = { name: "", email: "", phone: "", relation: "" };
@@ -18,6 +18,7 @@ function GuardiansPage({ user }: { user: User }) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fresh, setFresh] = useState<number | null>(null); // link recém-gerado, destacado na lista
 
   const load = useCallback(() => api<Guardian[]>("/me/guardians").then(setList).catch((e) => setError(e.message)), []);
   useEffect(() => {
@@ -54,8 +55,24 @@ function GuardiansPage({ user }: { user: User }) {
     }
   }
 
+  async function createLink() {
+    setBusy(true);
+    setError("");
+    setInfo("");
+    try {
+      const g = await api<Guardian>("/me/guardians/link", { body: {} });
+      setFresh(g.id);
+      setInfo("Link criado. Envie pelo WhatsApp ou copie e mande como preferir. Cada link vale para uma pessoa.");
+      await load();
+    } catch (err) {
+      setError((err as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(g: Guardian) {
-    if (!confirm(`Remover ${g.name} dos seus Virgílios? O link dele(a) deixará de funcionar.`)) return;
+    if (!confirm(g.open_invite ? "Cancelar este link de convite? Ele deixará de funcionar." : `Remover ${g.name} dos seus Virgílios? O link dele(a) deixará de funcionar.`)) return;
     try {
       await api(`/me/guardians/${g.id}`, { method: "DELETE" });
       await load();
@@ -103,26 +120,42 @@ function GuardiansPage({ user }: { user: User }) {
         </Alert>
       )}
 
+      {active < max && (
+        <div className="card app-download">
+          <div>
+            <h3 style={{ marginBottom: 2 }}>Convidar por link</h3>
+            <p className="muted small" style={{ margin: 0 }}>
+              Gere um link e mande para quem quiser, sem cadastrar nada antes. A pessoa informa o nome e o e-mail ao aceitar.
+            </p>
+          </div>
+          <button className="btn" onClick={createLink} disabled={busy}>
+            Gerar link de convite
+          </button>
+        </div>
+      )}
+
       {list === null ? (
         <Loading />
       ) : list.length === 0 ? (
         <Empty>Você ainda não tem Virgílios. Adicione o primeiro abaixo.</Empty>
       ) : (
         list.map((g) => (
-          <div className="card person" key={g.id}>
+          <div className="card person" key={g.id} style={g.id === fresh ? { borderColor: "var(--brand)" } : undefined}>
             <div className="avatar" aria-hidden>
-              {g.name.slice(0, 1).toUpperCase()}
+              {g.open_invite ? "🔗" : g.name.slice(0, 1).toUpperCase()}
             </div>
             <div className="body">
               <div className="row between">
                 <h3>
-                  {g.name}
+                  {g.open_invite ? "Link de convite" : g.name}
                   {g.relation && <span className="muted small"> · {g.relation}</span>}
                 </h3>
                 <Badge map={GUARDIAN_STATUS} value={g.status} />
               </div>
               <p className="muted small" style={{ margin: 0 }}>
-                {[g.email, g.phone].filter(Boolean).join(" · ") || "Sem contato cadastrado"}
+                {g.open_invite
+                  ? `Criado em ${dateTime(g.created_at)}. Quem aceitar informa nome e e-mail.`
+                  : [g.email, g.phone].filter(Boolean).join(" · ") || "Sem contato cadastrado"}
                 {g.has_app && " · usa o app"}
               </p>
               <div className="actions">
@@ -141,6 +174,7 @@ function GuardiansPage({ user }: { user: User }) {
                     Reenviar e-mail
                   </button>
                 )}
+                {!g.open_invite && (
                 <button
                   className="btn secondary small"
                   onClick={() => {
@@ -151,8 +185,9 @@ function GuardiansPage({ user }: { user: User }) {
                 >
                   Editar
                 </button>
+                )}
                 <button className="btn danger outline small" onClick={() => remove(g)}>
-                  Remover
+                  {g.open_invite ? "Cancelar link" : "Remover"}
                 </button>
               </div>
             </div>
@@ -162,7 +197,7 @@ function GuardiansPage({ user }: { user: User }) {
 
       {(editing || active < max) && (
         <form className="card" onSubmit={save}>
-          <h2>{editing ? "Editar Virgílio" : "Adicionar Virgílio"}</h2>
+          <h2>{editing ? "Editar Virgílio" : "Ou cadastre a pessoa"}</h2>
           <div className="form-grid">
             <div className="field">
               <label htmlFor="g-name">Nome</label>

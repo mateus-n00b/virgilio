@@ -132,3 +132,51 @@ def test_instructions_crud_and_ownership(api):
     assert api.c.get("/api/me/instructions", headers=api.h(other)).json() == []
     assert api.c.delete(f"/api/me/instructions/{iid}", headers=api.h(token)).status_code == 204
     assert api.c.get("/api/me/instructions", headers=api.h(token)).json() == []
+
+
+def test_link_invite_without_registering_first(api, outbox):
+    """"Gerar link de convite": ninguém é cadastrado antes; quem aceita informa nome e e-mail."""
+    token = api.register(name="Beatriz Lima")
+    r = api.c.post("/api/me/guardians/link", headers=api.h(token))
+    assert r.status_code == 201
+    g = r.json()
+    assert g["open_invite"] is True and g["name"] == "" and g["status"] == "PENDING"
+    assert outbox["emails"] == []  # sem e-mail: o link é compartilhado pela própria pessoa
+
+    view = api.c.get(f"/api/guardian/{token_of(g)}").json()
+    assert view["needs_name"] is True and view["person"]["name"] == "Beatriz Lima"
+
+    r = api.c.post(f"/api/guardian/{token_of(g)}/accept", json={"email": "neide@example.com"})
+    assert r.status_code == 422 and r.json()["detail"]["code"] == "name_required"
+    r = api.c.post(f"/api/guardian/{token_of(g)}/accept", json={"name": " Dona Neide ", "email": "neide@example.com"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "ACCEPTED" and r.json()["needs_name"] is False and r.json()["guardian_name"] == "Dona Neide"
+
+    listed = api.c.get("/api/me/guardians", headers=api.h(token)).json()
+    assert [(x["name"], x["email"], x["open_invite"]) for x in listed] == [("Dona Neide", "neide@example.com", False)]
+
+    # O link já foi usado: aceitar de novo não troca o nome de quem aceitou
+    api.c.post(f"/api/guardian/{token_of(g)}/accept", json={"name": "Outra Pessoa"})
+    assert api.c.get(f"/api/guardian/{token_of(g)}").json()["guardian_name"] == "Dona Neide"
+
+    # E recebe os alertas normalmente, pelo nome informado
+    api.sweep(days(2.1))
+    api.sweep(days(3.1))
+    alert = next(e for e in outbox["emails"] if e["to"] == "neide@example.com")
+    assert alert["body"].startswith("Olá, Dona Neide.")
+
+
+def test_link_invite_with_app_account_uses_account_name(api, outbox):
+    token = api.register(name="Beatriz")
+    other = api.register(name="Jorge Amado", email="jorge@example.com")
+    g = api.c.post("/api/me/guardians/link", headers=api.h(token)).json()
+    r = api.c.post(f"/api/guardian/{token_of(g)}/accept", headers=api.h(other), json={"link_account": True})
+    assert r.status_code == 200
+    assert r.json()["guardian_name"] == "Jorge Amado" and r.json()["guardian_email"] == "jorge@example.com"
+
+
+def test_link_invites_count_toward_limit(api, outbox):
+    token = api.register()
+    for _ in range(5):
+        assert api.c.post("/api/me/guardians/link", headers=api.h(token)).status_code == 201
+    assert api.c.post("/api/me/guardians/link", headers=api.h(token)).status_code == 409

@@ -26,6 +26,17 @@ def add_guardian(body: GuardianIn, user: User = Depends(get_current_user), db: S
     return service.guardian_out(service.add_guardian(db, user, body.name, body.email, body.phone, body.relation))
 
 
+@router.post(
+    "/me/guardians/link",
+    response_model=GuardianOut,
+    status_code=201,
+    dependencies=[Depends(RateLimit("guardian_link_invite", times=20, seconds=3600))],
+)
+def create_link_invite(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Gera um link de convite sem cadastrar a pessoa antes (ela se identifica ao aceitar)."""
+    return service.guardian_out(service.create_link_invite(db, user))
+
+
 @router.put("/me/guardians/{guardian_id}", response_model=GuardianOut)
 def update_guardian(guardian_id: int, body: GuardianIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return service.guardian_out(service.update_guardian(db, user, guardian_id, body.name, body.email, body.phone, body.relation))
@@ -67,7 +78,7 @@ def accept(token: str, body: AcceptIn, viewer: User | None = Depends(get_optiona
     g, person = service.by_token(db, token)
     if body.link_account and viewer is None:
         raise AppError(401, "unauthorized", "Entre na sua conta para vincular o app.")
-    service.accept(db, g, person, body.email, viewer if body.link_account else None)
+    service.accept(db, g, person, body.email, viewer if body.link_account else None, body.name)
     return service.view(db, g, person)
 
 

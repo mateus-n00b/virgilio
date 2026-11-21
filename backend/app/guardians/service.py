@@ -39,6 +39,7 @@ def guardian_out(g: Guardian) -> GuardianOut:
         relation=g.relation,
         status=g.status,
         has_app=g.linked_user_id is not None,
+        open_invite=g.open_invite,
         invite_url=invite_url(g),
         created_at=g.created_at,
         responded_at=g.responded_at,
@@ -74,6 +75,21 @@ def add_guardian(db: Session, user: User, name: str, email: str | None, phone: s
     notify.enqueue_invite(db, g)
     db.commit()
     notify.dispatch_quietly(db)
+    return g
+
+
+def create_link_invite(db: Session, user: User) -> Guardian:
+    """Convite por link, sem cadastrar ninguém antes: quem abrir informa nome e e-mail ao aceitar.
+
+    Cada link vale para uma pessoa (o primeiro que aceitar). Conta no limite de Virgílios.
+    """
+    s = get_settings()
+    active = [g for g in list_guardians(db, user) if g.status != GuardianStatus.DECLINED]
+    if len(active) >= s.max_guardians:
+        raise AppError(409, "too_many_guardians", f"Você pode ter até {s.max_guardians} Virgílios.")
+    g = Guardian(user_id=user.id, name="", token=new_opaque_token())
+    db.add(g)
+    db.commit()
     return g
 
 
@@ -120,6 +136,7 @@ def view(db: Session, g: Guardian, person: User) -> GuardianView:
         guardian_email=g.email,
         status=g.status,
         has_app=g.linked_user_id is not None,
+        needs_name=g.open_invite,
         person=PersonOut(name=person.name, first_name=person.first_name),
     )
     if g.status != GuardianStatus.ACCEPTED:
@@ -150,7 +167,12 @@ def view(db: Session, g: Guardian, person: User) -> GuardianView:
     return out
 
 
-def accept(db: Session, g: Guardian, person: User, email: str | None, link_to: User | None) -> None:
+def accept(db: Session, g: Guardian, person: User, email: str | None, link_to: User | None, name: str | None = None) -> None:
+    if g.open_invite:
+        name = name or (link_to.name if link_to is not None else None)
+        if not name or len(name) < 2:
+            raise AppError(422, "name_required", "Informe seu nome para aceitar o convite.")
+        g.name = name
     if link_to is not None:
         if link_to.id == person.id:
             raise AppError(422, "self_guardian", "Você não pode ser seu próprio Virgílio.")

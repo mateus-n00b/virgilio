@@ -21,6 +21,7 @@ export function GuardianPanel({ token }: { token: string }) {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [link, setLink] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -74,7 +75,8 @@ export function GuardianPanel({ token }: { token: string }) {
     return (
       <div className="narrow stack">
         <h1>
-          {v.guardian_name.split(" ")[0]}, {v.person.name} quer você como Virgílio
+          {v.guardian_name ? `${v.guardian_name.split(" ")[0]}, ` : ""}
+          {v.person.name} quer você como Virgílio
         </h1>
         <Alert>{error}</Alert>
         {v.status === "DECLINED" && <Alert kind="info">Você recusou este convite. Se mudou de ideia, ainda pode aceitar.</Alert>}
@@ -90,9 +92,25 @@ export function GuardianPanel({ token }: { token: string }) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              act("accept", { email: email || null, link_account: !!user && link });
+              act("accept", { name: name || null, email: email || null, link_account: !!user && link });
             }}
           >
+            {v.needs_name && (
+              <div className="field">
+                <label htmlFor="g-name">Seu nome</label>
+                <input
+                  id="g-name"
+                  autoComplete="name"
+                  required={!user || !link}
+                  minLength={2}
+                  maxLength={120}
+                  placeholder={user && link ? user.name : undefined}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <div className="hint">É assim que {first} verá você na lista de Virgílios.</div>
+              </div>
+            )}
             <div className="field">
               <label htmlFor="email">Seu e-mail para receber os avisos</label>
               <input id="email" type="email" required={!user || !link} value={email} onChange={(e) => setEmail(e.target.value)} />

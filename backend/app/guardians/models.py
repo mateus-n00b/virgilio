@@ -25,6 +25,7 @@ class Guardian(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # quem é protegido
+    # Vazio = convite por link ainda não aceito: quem aceitar informa o próprio nome
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str | None] = mapped_column(String(254))
     phone: Mapped[str | None] = mapped_column(String(30))
@@ -34,3 +35,8 @@ class Guardian(Base):
     linked_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    @property
+    def open_invite(self) -> bool:
+        """Convite por link, criado sem nome: a pessoa se identifica ao aceitar."""
+        return not self.name

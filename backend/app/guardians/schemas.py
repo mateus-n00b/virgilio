@@ -32,14 +32,21 @@ class GuardianOut(BaseModel):
     relation: str | None
     status: str
     has_app: bool  # aceitou logado no app: recebe push além do e-mail
+    open_invite: bool  # convite por link ainda sem nome (a pessoa se identifica ao aceitar)
     invite_url: str
     created_at: datetime
     responded_at: datetime | None
 
 
 class AcceptIn(BaseModel):
+    name: str | None = Field(default=None, max_length=120)  # obrigatório no convite por link
     email: EmailStr | None = None
     link_account: bool = False  # vincula a conta logada (recebe push no app)
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v: str | None) -> str | None:
+        return clean_optional(v)
 
     @field_validator("email", mode="before")
     @classmethod
@@ -79,6 +86,7 @@ class GuardianView(BaseModel):
     guardian_email: str | None
     status: str
     has_app: bool
+    needs_name: bool  # convite por link: pedir o nome de quem aceita
     person: PersonOut
     watch: WatchView | None = None  # só depois de aceitar
     alert: AlertOut | None = None

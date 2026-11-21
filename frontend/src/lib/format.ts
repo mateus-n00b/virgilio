@@ -50,7 +50,7 @@ export function watchStateKey(w: Pick<Watch, "state" | "paused">): WatchState | 
 export function inviteMessage(guardianName: string, myName: string, url: string): string {
   const first = guardianName.split(" ")[0];
   return (
-    `Oi, ${first}! Uso o Virgílio, um app de prova de vida para quem mora só ou longe da família. ` +
+    `${first ? `Oi, ${first}!` : "Oi!"} Uso o Virgílio, um app de prova de vida para quem mora só ou longe da família. ` +
     `Você aceita ser meu Virgílio? Você só recebe um aviso se eu passar alguns dias sem dar sinal de vida, ` +
     `com instruções do que fazer. Não precisa instalar nada: ${url}\nAbraço, ${myName}`
   );

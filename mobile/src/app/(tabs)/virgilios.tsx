@@ -59,8 +59,27 @@ export default function GuardiansScreen() {
     }
   }
 
+  async function createLink() {
+    setBusy(true);
+    setError("");
+    setInfo("");
+    try {
+      const g = await api<Guardian>("/me/guardians/link", { body: {} });
+      await load();
+      setInfo("Link criado. Cada link vale para uma pessoa: ela informa nome e e-mail ao aceitar.");
+      await Share.share({ message: inviteMessage("", user!.name, g.invite_url) });
+    } catch (e) {
+      setError((e as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function remove(g: Guardian) {
-    NativeAlert.alert("Remover Virgílio", `Remover ${g.name}? O link dele(a) deixará de funcionar.`, [
+    const [title, text] = g.open_invite
+      ? ["Cancelar link", "Este link de convite deixará de funcionar."]
+      : ["Remover Virgílio", `Remover ${g.name}? O link dele(a) deixará de funcionar.`];
+    NativeAlert.alert(title, text, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Remover",
@@ -87,6 +106,14 @@ export default function GuardiansScreen() {
         <Alert>{error}</Alert>
         <Alert kind="success">{info}</Alert>
 
+        {active < max && (
+          <Card>
+            <Text style={styles.h3}>Convidar por link</Text>
+            <Text style={styles.muted}>Mande um link para quem quiser, sem cadastrar nada antes. A pessoa informa nome e e-mail ao aceitar.</Text>
+            <Button title="Gerar link de convite" onPress={createLink} busy={busy} style={{ marginTop: 8 }} />
+          </Card>
+        )}
+
         {list === null ? (
           <Loading />
         ) : (
@@ -94,12 +121,16 @@ export default function GuardiansScreen() {
             <Card key={g.id}>
               <View style={styles.between}>
                 <Text style={[styles.h3, { flex: 1 }]}>
-                  {g.name}
+                  {g.open_invite ? "Link de convite" : g.name}
                   {g.relation ? <Text style={styles.small}> · {g.relation}</Text> : null}
                 </Text>
                 <Badge map={GUARDIAN_STATUS} value={g.status} />
               </View>
-              <Text style={styles.small}>{[g.email, g.phone].filter(Boolean).join(" · ") || "Sem contato"}{g.has_app ? " · usa o app" : ""}</Text>
+              <Text style={styles.small}>
+                {g.open_invite
+                  ? "Quem aceitar informa nome e e-mail."
+                  : `${[g.email, g.phone].filter(Boolean).join(" · ") || "Sem contato"}${g.has_app ? " · usa o app" : ""}`}
+              </Text>
               <View style={[styles.row, { flexWrap: "wrap", marginTop: 8 }]}>
                 {g.status !== "ACCEPTED" && (
                   <Button title="WhatsApp" kind="whatsapp" onPress={() => Linking.openURL(whatsappLink(message(g), g.phone))} style={{ minHeight: 38 }} />
@@ -107,16 +138,18 @@ export default function GuardiansScreen() {
                 {g.status !== "ACCEPTED" && (
                   <Button title="Compartilhar" kind="secondary" onPress={() => Share.share({ message: message(g) })} style={{ minHeight: 38 }} />
                 )}
-                <Button
-                  title="Editar"
-                  kind="secondary"
-                  style={{ minHeight: 38 }}
-                  onPress={() => {
-                    setEditing(g.id);
-                    setForm({ name: g.name, email: g.email ?? "", phone: g.phone ?? "", relation: g.relation ?? "" });
-                  }}
-                />
-                <Button title="Remover" kind="secondary" onPress={() => remove(g)} style={{ minHeight: 38 }} />
+                {!g.open_invite && (
+                  <Button
+                    title="Editar"
+                    kind="secondary"
+                    style={{ minHeight: 38 }}
+                    onPress={() => {
+                      setEditing(g.id);
+                      setForm({ name: g.name, email: g.email ?? "", phone: g.phone ?? "", relation: g.relation ?? "" });
+                    }}
+                  />
+                )}
+                <Button title={g.open_invite ? "Cancelar link" : "Remover"} kind="secondary" onPress={() => remove(g)} style={{ minHeight: 38 }} />
               </View>
             </Card>
           ))
@@ -124,7 +157,7 @@ export default function GuardiansScreen() {
 
         {(editing || active < max) && (
           <Card>
-            <Text style={styles.h2}>{editing ? "Editar Virgílio" : "Adicionar Virgílio"}</Text>
+            <Text style={styles.h2}>{editing ? "Editar Virgílio" : "Ou cadastre a pessoa"}</Text>
             <Field label="Nome" value={form.name} onChangeText={set("name")} maxLength={120} />
             <Field label="Relação (opcional)" placeholder="vizinha, amigo, primo…" value={form.relation ?? ""} onChangeText={set("relation")} maxLength={60} />
             <Field
