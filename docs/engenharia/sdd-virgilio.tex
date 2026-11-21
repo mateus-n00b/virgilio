@@ -1,0 +1,1048 @@
+% =============================================================================
+% Virgílio: Documento de Descrição de Projeto de Software (SDD)
+% Estrutura: IEEE 1016-2009 (Software Design Description) + modelo arc42 +
+% visões do modelo C4. Mesmo modelo do SDD do promoAE.
+% Compila com XeLaTeX, LuaLaTeX, pdfLaTeX ou Tectonic:
+%   tectonic docs/engenharia/sdd-virgilio.tex
+% =============================================================================
+\documentclass[11pt,a4paper]{report}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage[brazilian]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xstring}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.multipart,automata,fit,backgrounds,calc,decorations.pathreplacing}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+
+% ---------------------------------------------------------------- cores e caixas
+% Paleta do produto: verde-louro (a coroa de Virgílio) e dourado
+\definecolor{marca}{HTML}{2F6B4F}
+\definecolor{dourado}{HTML}{A8741A}
+\definecolor{tinta}{HTML}{1D2420}
+\definecolor{suave}{HTML}{5F6A63}
+\definecolor{fundo}{HTML}{F4F1EA}
+\definecolor{azul}{HTML}{22568F}
+\definecolor{verde}{HTML}{1F7A46}
+\definecolor{perigo}{HTML}{B42318}
+
+\newtcolorbox{conceito}[1]{enhanced,breakable,colback=blue!3,colframe=azul!70,
+  fonttitle=\bfseries,title={Conceito: #1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt}
+\newtcolorbox{decisao}[1]{enhanced,breakable,colback=marca!4,colframe=marca!85,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt}
+\newtcolorbox{nota}{enhanced,breakable,colback=fundo,colframe=suave!60,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt}
+
+\lstdefinestyle{codigo}{
+  basicstyle=\ttfamily\footnotesize, keywordstyle=\color{azul}\bfseries,
+  commentstyle=\color{suave}\itshape, stringstyle=\color{verde},
+  backgroundcolor=\color{fundo}, frame=single, rulecolor=\color{suave!40},
+  breaklines=true, columns=fullflexible, keepspaces=true, showstringspaces=false,
+  xleftmargin=4pt, xrightmargin=4pt, aboveskip=8pt, belowskip=8pt,
+  literate={á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1 {é}{{\'e}}1 {ê}{{\^e}}1
+           {í}{{\'i}}1 {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1 {ç}{{\c c}}1
+           {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c C}}1 {→}{{$\rightarrow$}}1
+}
+\lstset{style=codigo}
+\renewcommand{\lstlistingname}{Código}
+\renewcommand{\lstlistlistingname}{Lista de códigos}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\lstdefinelanguage{SQLx}{language=SQL,morekeywords={WHERE,RETURNING,UNIQUE,INDEX,CHECK,SKIP,LOCKED}}
+
+% Caminhos e rotas em fonte mono, com quebra de linha permitida após cada "/"
+\DeclareRobustCommand{\code}[1]{\begingroup\noexpandarg\StrSubstitute{#1}{/}{/\allowbreak}[\monotmp]\texttt{\small\monotmp}\endgroup}
+\newcommand{\arq}[1]{\code{#1}}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.25}
+
+% TikZ: estilos comuns
+\tikzset{
+  caixa/.style={draw=tinta,rounded corners=3pt,fill=white,align=center,font=\small,inner sep=6pt},
+  pessoa/.style={caixa,fill=dourado!12,draw=dourado},
+  sistema/.style={caixa,fill=marca!10,draw=marca,minimum width=3.4cm,minimum height=1.2cm},
+  externo/.style={caixa,fill=gray!12,draw=gray!70,minimum width=3cm},
+  seta/.style={-{Stealth[length=2.2mm]},thick,draw=tinta!80},
+  rotulo/.style={font=\scriptsize,fill=white,inner sep=1.5pt,align=center},
+  tabela/.style={rectangle split,rectangle split parts=2,draw=tinta,fill=white,
+    rectangle split part fill={marca!14,white},font=\scriptsize,align=left,inner sep=3pt,text width=4.1cm},
+}
+
+\title{\textbf{Virgílio}\\[6pt]\Large Documento de Descrição de Projeto de Software\\
+  \large (\emph{Software Design Description}, SDD)}
+\author{Projeto Virgílio}
+\date{Versão 1.0, novembro de 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Este documento descreve como o sistema Virgílio foi projetado e construído, de ponta a ponta: a API,
+o site, o aplicativo mobile, o banco de dados, as integrações (e-mail e notificações push), o
+agendamento periódico e a implantação. Apresenta a arquitetura, os componentes, os padrões de projeto,
+as tecnologias, a modelagem de dados, as máquinas de estado do ciclo de prova de vida, a API, os
+mecanismos de segurança, privacidade e confiabilidade, a estratégia de testes, a operação e os riscos
+conhecidos. Segue a estrutura de uma \emph{Software Design Description} (IEEE 1016-2009), organizada
+segundo o modelo arc42 e ilustrada com as visões do modelo C4, o mesmo formato do SDD do promoAE, que
+serviu de base técnica para o projeto. Como no documento de referência, cada padrão ou técnica é
+explicado em um quadro de conceito e associado ao arquivo do código em que aparece.
+\end{abstract}
+
+\tableofcontents
+
+% =============================================================================
+\chapter{Introdução}
+
+\section{Que documento é este}
+
+O \textbf{Documento de Descrição de Projeto de Software} (\emph{Software Design Description}, SDD)
+registra \emph{como} um sistema foi construído. Sua norma de referência é a \textbf{IEEE 1016-2009},
+que pede as partes interessadas e suas preocupações, os pontos de vista adotados e, para cada um, uma
+visão do projeto: contexto, composição, dados, interfaces, comportamento, implantação.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y l@{}}
+\toprule
+Documento & Responde a & Norma \\
+\midrule
+SRS: Especificação de Requisitos & \emph{O que} o sistema deve fazer e com que qualidade & ISO/IEC/IEEE 29148 \\
+SAD: Documento de Arquitetura & Quais as estruturas de alto nível e por quê & ISO/IEC/IEEE 42010 \\
+\textbf{SDD: Descrição de Projeto} & \emph{Como} o sistema foi construído & \textbf{IEEE 1016} \\
+Plano de Testes & Como a qualidade é verificada & ISO/IEC/IEEE 29119 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+No Virgílio, o papel de SRS é cumprido pela descrição do produto e pelo \arq{README.md} da raiz.
+Este SDD incorpora a parte arquitetural (o SAD), usa o modelo \textbf{arc42} para ordenar os capítulos
+e o modelo \textbf{C4} (Contexto, Contêineres, Componentes, Código) para os diagramas.
+
+\section{Escopo do sistema}
+
+O Virgílio é um serviço de \textbf{prova de vida periódica} para pessoas que moram sozinhas ou longe da
+família. A pessoa escolhe gente próxima (amigos, vizinhos, conhecidos) para serem seus
+\textbf{Virgílios}, em referência ao guia de Dante na \emph{Divina Comédia}. A cada $x$ dias o sistema
+pede uma confirmação de que está tudo bem. Se não houver resposta em $x + y$ dias, sendo $y$ uma
+tolerância, os Virgílios são avisados e passam a ver as instruções deixadas (``alimente meu gato'',
+``a chave está com a vizinha do 102''), os dados de contato e, se a pessoa tiver compartilhado, a
+\textbf{última localização conhecida}.
+
+O sistema tem três aplicações sobre um mesmo \emph{backend}:
+\begin{itemize}
+  \item \textbf{API} (FastAPI): regras do ciclo, persistência, criptografia, fila de avisos, varredura periódica;
+  \item \textbf{site} (Next.js): todas as funções, incluindo a página pública do Virgílio (link pessoal, sem login);
+  \item \textbf{app mobile} (Expo/React Native): as mesmas funções da pessoa acompanhada, mais o lembrete
+        local agendado no aparelho e o recebimento de alertas por push.
+\end{itemize}
+
+\section{Partes interessadas e preocupações}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y@{}}
+\toprule
+Parte interessada & Preocupações principais \\
+\midrule
+Pessoa acompanhada & confirmar com um toque; não gerar alarme falso; privacidade das instruções e da localização; pausar em viagens \\
+Virgílio & ser avisado só quando necessário; saber o que fazer e onde ir; coordenar com os outros Virgílios; não precisar instalar nada \\
+Família distante & que alguém próximo aja rápido \\
+Equipe de desenvolvimento & simplicidade, baixo custo, testabilidade, mesma base técnica do promoAE \\
+Operação & nenhum alerta perdido; implantação simples; segredos protegidos \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Glossário}
+
+\begin{description}[style=nextline,leftmargin=1.5em]
+  \item[Prova de vida (check-in)] Confirmação, pela pessoa, de que está bem. Pode levar a localização atual.
+  \item[Ciclo] Período entre duas provas de vida. Tem intervalo $x$ (\code{interval\_days}) e tolerância $y$ (\code{grace\_days}).
+  \item[Prazo (\code{due\_at})] Fim do intervalo: a pessoa recebe um lembrete.
+  \item[Alerta] Aberto em \code{alert\_at} $= $ prazo $+\ y$, ou na hora, por SOS. Os Virgílios são avisados.
+  \item[Virgílio] Pessoa de confiança indicada para ser avisada. Não precisa de conta; acessa por um link pessoal.
+  \item[Link pessoal] URL \code{/v/<token>} de cada Virgílio, usada no convite e nos alertas.
+  \item[Convite por link] Virgílio criado sem nome; quem abre o link informa nome e e-mail ao aceitar.
+  \item[Varredura (\emph{sweep})] Rotina periódica que avança os ciclos vencidos e envia a fila de avisos.
+  \item[Entrega (\emph{delivery})] Um aviso a enviar por um canal (e-mail ou push), registrado na fila de saída.
+  \item[Pausa] Suspensão do ciclo até uma data; o fim da pausa conta como prova de vida.
+\end{description}
+
+% =============================================================================
+\chapter{Requisitos que orientam a arquitetura}
+
+\section{Requisitos funcionais (resumo)}
+
+\begin{enumerate}
+  \item Cadastro e autenticação por e-mail e senha, com redefinição por e-mail.
+  \item Configuração do ciclo: intervalo $x$ de 1 a 30 dias e tolerância $y$ de 1 a 14 dias; pausa de até 60 dias.
+  \item Prova de vida pelo app, pelo site ou por um link de um clique no e-mail de lembrete, opcionalmente com localização.
+  \item Lembretes à pessoa no prazo e a cada $\sim$20 h enquanto não houver resposta.
+  \item Alerta aos Virgílios em $x+y$ dias, repetido até alguém assumir, no máximo 7 vezes.
+  \item Pedido de ajuda imediato (SOS).
+  \item Até 5 Virgílios por pessoa, convidados por cadastro (nome, e-mail, WhatsApp) ou por link avulso.
+  \item Aceite, recusa e saída pelo link pessoal, sem conta; vínculo opcional à conta do app para receber push.
+  \item Durante um alerta: instruções, contato, última localização, ``vou verificar'' e ``encontrei, está bem''.
+  \item Até 20 instruções de até 4.000 caracteres.
+  \item Exclusão de conta com remoção de todos os dados.
+  \item Download do app Android pelo site.
+\end{enumerate}
+
+\section{Atributos de qualidade}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y Y@{}}
+\toprule
+Atributo & Requisito & Como foi atendido \\
+\midrule
+Confiabilidade & nenhum alerta pode se perder por falha momentânea de SMTP ou do Expo & fila de saída (\emph{Outbox}) com novas tentativas na varredura seguinte (cap.~\ref{cap:avisos}) \\
+Corretude temporal & não alertar quem confirmou; não enviar aviso obsoleto & checagem do estado no momento do envio; descarte de avisos com mais de 3 dias \\
+Privacidade (LGPD) & instruções e localização só para os Virgílios e só em alerta & criptografia em repouso; visibilidade condicionada ao alerta aberto (cap.~\ref{cap:seguranca}) \\
+Segurança & credenciais fortes, sessões revogáveis, links não reutilizáveis & scrypt, JWT com versão, tokens de propósito vinculados ao ciclo \\
+Disponibilidade dos avisos & lembrete mesmo sem internet & notificação local agendada no aparelho \\
+Usabilidade & confirmar em um toque; Virgílio sem instalar nada & botão único; link pessoal; convite pronto para WhatsApp \\
+Custo & operar no plano gratuito & Vercel Hobby, Neon, cron diário + GitHub Actions horário \\
+Testabilidade & ciclo testável sem esperar dias & varredura recebe o ``agora'' como parâmetro \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Restrições}
+
+\begin{itemize}
+  \item \textbf{Técnicas:} mesma base do promoAE: Python 3.12 + FastAPI, Next.js 16 + TypeScript, Expo SDK 58, PostgreSQL, Vercel.
+  \item \textbf{Execução serverless:} sem processos residentes; tarefas periódicas dependem de um agendador externo.
+  \item \textbf{Escopo:} o Virgílio não é um serviço de emergência e não substitui SAMU, Bombeiros ou Polícia.
+\end{itemize}
+
+% =============================================================================
+\chapter{Visão de contexto (C4, nível 1)}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.2cm and 1.6cm]
+  \node[sistema,minimum width=4.2cm,minimum height=1.6cm] (sis) {\textbf{Virgílio}\\\scriptsize site, app e API};
+  \node[pessoa,above left=of sis] (pes) {Pessoa\\acompanhada};
+  \node[pessoa,above right=of sis] (vir) {Virgílio\\\scriptsize (sem conta ou com app)};
+  \node[externo,below left=1.4cm and 0.2cm of sis] (smtp) {Servidor SMTP\\\scriptsize (e-mail)};
+  \node[externo,below=1.4cm of sis] (expo) {Expo Push Service\\\scriptsize FCM / APNs};
+  \node[externo,below right=1.4cm and 0.2cm of sis] (cron) {Agendadores\\\scriptsize Vercel Cron, GitHub Actions};
+  \node[externo,above=1.1cm of vir] (osm) {OpenStreetMap\\\scriptsize Google Maps};
+  \node[externo,above=1.1cm of pes] (gh) {GitHub Releases\\\scriptsize (APK)};
+  \draw[seta] (pes) -- node[rotulo]{prova de vida,\\instruções, SOS} (sis);
+  \draw[seta] (sis) -- node[rotulo]{convite,\\alertas} (vir);
+  \draw[seta] (sis) -- node[rotulo]{lembretes,\\convites, alertas} (smtp);
+  \draw[seta] (sis) -- node[rotulo]{push} (expo);
+  \draw[seta] (cron) -- node[rotulo]{varredura\\periódica} (sis);
+  \draw[seta,dashed] (vir) -- node[rotulo]{mapa da\\localização} (osm);
+  \draw[seta,dashed] (pes) -- node[rotulo]{baixa o\\app} (gh);
+\end{tikzpicture}
+\caption{Contexto do sistema. Linhas tracejadas: acesso direto do navegador ou do app.}
+\end{figure}
+
+\paragraph{Integrações externas.}
+\begin{itemize}
+  \item \textbf{SMTP} (mesma configuração do promoAE; em produção, Gmail com senha de app): lembretes com link de confirmação, convites, alertas, ``vou verificar'', ``está bem'' e redefinição de senha (\arq{backend/app/core/mailer.py}).
+  \item \textbf{Expo Push Service}: entrega por FCM (Android) e APNs (iOS) (\arq{backend/app/notify/push.py}).
+  \item \textbf{Vercel Cron} (diário) e \textbf{GitHub Actions} (horário): chamam \code{GET /api/internal/sweep} com \code{Authorization: Bearer <CRON\_SECRET>}.
+  \item \textbf{OpenStreetMap} (mapa embutido, sem chave) e \textbf{Google Maps} (link ``abrir no mapa''): só exibição, no cliente.
+  \item \textbf{GitHub Releases}: hospeda o APK; o site aponta para \code{releases/latest/download/virgilio.apk}.
+\end{itemize}
+
+% =============================================================================
+\chapter{Visão de contêineres (C4, nível 2)}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.0cm and 1.3cm]
+  \node[caixa,fill=marca!8,draw=marca,minimum width=3.6cm,minimum height=1.3cm] (web) {\textbf{Site}\\\scriptsize Next.js 16, React 19, TypeScript};
+  \node[caixa,fill=marca!8,draw=marca,minimum width=3.6cm,minimum height=1.3cm,right=2.2cm of web] (app) {\textbf{App mobile}\\\scriptsize Expo SDK 58, React Native 0.88};
+  \node[caixa,fill=marca!16,draw=marca,minimum width=4.4cm,minimum height=1.4cm,below=1.6cm of $(web)!0.5!(app)$] (api) {\textbf{API}\\\scriptsize Python 3.12, FastAPI, SQLAlchemy 2};
+  \node[caixa,fill=verde!10,draw=verde,minimum width=4.4cm,minimum height=1.2cm,below=1.3cm of api,shape=cylinder,shape border rotate=90,aspect=0.18] (db) {\textbf{PostgreSQL 16}\\\scriptsize Neon, São Paulo};
+  \node[externo,left=1.4cm of api] (cron) {Agendador\\\scriptsize cron};
+  \node[externo,right=1.4cm of api] (ext) {SMTP\\Expo Push};
+  \draw[seta] (web) -- node[rotulo]{JSON/HTTPS\\\code{/api/*}} (api);
+  \draw[seta] (app) -- node[rotulo]{JSON/HTTPS\\Bearer JWT} (api);
+  \draw[seta] (api) -- node[rotulo]{SQL (psycopg 3)} (db);
+  \draw[seta] (cron) -- node[rotulo]{sweep} (api);
+  \draw[seta] (api) -- node[rotulo]{avisos} (ext);
+  \begin{scope}[on background layer]
+    \node[draw=suave,dashed,rounded corners,fit=(web)(api)(db),inner sep=10pt,label={[font=\scriptsize,text=suave]above left:projeto Vercel único}] {};
+  \end{scope}
+\end{tikzpicture}
+\caption{Contêineres e protocolos.}
+\end{figure}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y Y@{}}
+\toprule
+Contêiner & Tecnologia & Responsabilidade \\
+\midrule
+API & Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, Alembic, cryptography & ciclo de prova de vida, autorização, criptografia, fila de avisos, varredura \\
+Site & Next.js 16 (App Router), React 19, TypeScript & todas as telas da pessoa; página pública do Virgílio; download do APK \\
+App mobile & Expo SDK 58, Expo Router, expo-notifications, expo-location & telas da pessoa e do Virgílio vinculado; lembrete local; push \\
+Banco & PostgreSQL 16 & usuários, ciclos, alertas, Virgílios, instruções cifradas, fila de avisos \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+O código-fonte soma cerca de 2.500 linhas de Python na API (mais 700 de testes), 2.200 de
+TypeScript no site e 1.800 no app.
+
+% =============================================================================
+\chapter{Decisões arquiteturais}
+
+As decisões estão no formato \textbf{ADR} (\emph{Architecture Decision Record}): contexto, decisão e
+consequências.
+
+\begin{decisao}{ADR-01: Reaproveitar a base técnica do promoAE}
+\textbf{Contexto:} já existia um projeto em produção com FastAPI, Next.js, Expo e Vercel, com
+configuração, módulos de infraestrutura e script de build Android testados.\\
+\textbf{Decisão:} copiar a estrutura e os módulos transversais (\code{core/db}, \code{core/errors},
+\code{core/ratelimit}, \code{core/mailer}, cliente Expo Push, cliente HTTP do site e do app, \arq{vercel.json},
+\arq{build-android.sh}) e escrever do zero apenas o domínio.\\
+\textbf{Consequências:} menos risco e mesma operação para quem já mantém o promoAE; as duas bases
+podem divergir com o tempo (correções precisam ser portadas manualmente).
+\end{decisao}
+
+\begin{decisao}{ADR-02: Fila de saída (Outbox) para todos os avisos}
+\textbf{Contexto:} um alerta perdido anula o propósito do produto; SMTP e Expo podem falhar.\\
+\textbf{Decisão:} todo aviso é gravado na tabela \code{deliveries} na mesma transação do evento que o
+originou e enviado logo depois; o que falhar fica pendente e é reenviado na varredura seguinte, até 5 tentativas.\\
+\textbf{Consequências:} nenhum aviso se perde e nenhum é enviado para um evento desfeito; o texto é
+montado no momento do envio, com o estado atual, o que permite descartar avisos que perderam o sentido.
+\end{decisao}
+
+\begin{decisao}{ADR-03: Varredura periódica idempotente, disparada de fora}
+\textbf{Contexto:} em serverless não há processo residente para ``acordar'' no prazo de cada pessoa.\\
+\textbf{Decisão:} uma rota protegida (\code{/api/internal/sweep}) avança todos os ciclos vencidos de uma vez.
+Ela é idempotente e pode ser chamada por qualquer agendador: Vercel Cron (1x por dia, limite do plano
+Hobby), GitHub Actions (de hora em hora) ou o serviço \code{cron} do Docker Compose (a cada 15 min).\\
+\textbf{Consequências:} infraestrutura mínima; a precisão do alerta é a do agendador mais frequente. Só
+com o cron diário, um alerta pode atrasar até cerca de um dia.
+\end{decisao}
+
+\begin{decisao}{ADR-04: Virgílios sem conta, acesso por link pessoal}
+\textbf{Contexto:} exigir instalação ou cadastro reduziria muito a adesão de vizinhos e conhecidos.\\
+\textbf{Decisão:} cada Virgílio tem um token opaco aleatório (\code{guardians.token}); o link
+\code{/v/<token>} permite aceitar, recusar, ver o estado e agir durante um alerta. A conta do app é opcional e só acrescenta push.\\
+\textbf{Consequências:} adesão simples; o link é um segredo ao portador. Por isso os dados sensíveis só
+aparecem com alerta aberto (ADR-05).
+\end{decisao}
+
+\begin{decisao}{ADR-05: Revelação condicionada ao alerta e criptografia em repouso}
+\textbf{Contexto:} instruções e localização podem conter dados sensíveis (onde está a chave, endereço).\\
+\textbf{Decisão:} instruções e última localização são cifradas com Fernet (chave fora do banco,
+\code{INSTRUCTIONS\_KEY}); a API só as decifra e entrega a um Virgílio aceito enquanto houver alerta aberto.\\
+\textbf{Consequências:} um vazamento do banco, sozinho, não revela esses dados; perder ou trocar a chave
+torna os dados ilegíveis, e a chave precisa de guarda própria.
+\end{decisao}
+
+\begin{decisao}{ADR-06: Lembrete local no aparelho, além do push}
+\textbf{Contexto:} o push depende de projeto EAS e Firebase, e o cron pode ser diário.\\
+\textbf{Decisão:} após cada leitura do ciclo, o app agenda uma notificação local para \code{due\_at}.\\
+\textbf{Consequências:} lembrete pontual e sem internet; o push continua necessário para alertar Virgílios.
+\end{decisao}
+
+\begin{decisao}{ADR-07: Login por e-mail e senha}
+\textbf{Contexto:} o e-mail já é o canal dos lembretes; o promoAE usa WhatsApp OTP, que tem custo por mensagem.\\
+\textbf{Decisão:} e-mail e senha (scrypt), redefinição por link de 1 hora, sessão de 30 dias revogável por \code{token\_version}.\\
+\textbf{Consequências:} sem custo por login; a senha passa a ser um dado a proteger.
+\end{decisao}
+
+\begin{decisao}{ADR-08: Convite por link sem migração de esquema}
+\textbf{Contexto:} o convite avulso precisava de Virgílios sem nome, com o banco de produção já migrado.\\
+\textbf{Decisão:} manter \code{guardians.name} obrigatório e usar a cadeia vazia como marcador de
+``convite por link ainda não aceito'' (propriedade \code{Guardian.open\_invite}). O nome é exigido no aceite.\\
+\textbf{Consequências:} nenhuma migração; o significado do valor vazio fica documentado no modelo e precisa ser respeitado pelos clientes.
+\end{decisao}
+
+\begin{decisao}{ADR-09: APK distribuído por GitHub Releases}
+\textbf{Contexto:} publicação em loja leva tempo; o público precisa do app já no lançamento.\\
+\textbf{Decisão:} APK gerado localmente com limite de memória (\arq{mobile/scripts/build-android.sh}),
+anexado à release do repositório; o site exibe o botão a partir de \code{ANDROID\_APK\_URL}, servida por \code{/api/config}.\\
+\textbf{Consequências:} lançar uma versão nova não exige mudar o site (o link \code{latest} acompanha);
+o APK é assinado com a chave de depuração e não serve para a Play Store.
+\end{decisao}
+
+% =============================================================================
+\chapter{Backend: componentes e padrões de projeto}
+
+\section{Linguagem e bibliotecas}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y@{}}
+\toprule
+Tecnologia & Papel \\
+\midrule
+Python 3.12 & linguagem, com \emph{type hints} \\
+FastAPI 0.143 & framework web ASGI; validação e OpenAPI automáticas (documentação só em desenvolvimento) \\
+Pydantic 2 & contratos de entrada e saída \\
+SQLAlchemy 2 & ORM e SQL tipado (\code{Mapped[...]}) \\
+Alembic & migrações versionadas \\
+psycopg 3 & driver PostgreSQL \\
+PyJWT & JWT HS256 para sessão e links de propósito \\
+cryptography (Fernet) & cifragem de instruções e localização \\
+httpx & cliente HTTP do Expo Push \\
+smtplib (padrão) & envio de e-mail por STARTTLS (587) ou SSL (465) \\
+pytest & testes \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Organização em módulos e camadas}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries\ttfamily}l Y@{}}
+\toprule
+\normalfont\bfseries Módulo & Responsabilidade \\
+\midrule
+core/ & configuração, banco, segurança (senhas e tokens), criptografia, dependências de autenticação, erros, limite de requisições, e-mail \\
+users/ & cadastro, login, perfil, senha, exclusão de conta \\
+watch/ & ciclo de prova de vida, alertas, SOS, pausa, localização, varredura \\
+guardians/ & Virgílios: cadastro, convite por link, aceite, recusa, ``vou verificar'', encerramento, protegidos \\
+instructions/ & instruções cifradas (CRUD) \\
+notify/ & aparelhos push, fila de saída, textos dos avisos, envio \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Cada módulo segue a mesma divisão em camadas do promoAE: \code{router.py} (HTTP), \code{schemas.py}
+(contratos), \code{service.py} (regras e transações) e \code{models.py} (entidades).
+
+\begin{conceito}{Arquitetura em camadas}
+Cada camada só conhece a de baixo. A rota traduz HTTP em chamadas ao serviço e não contém regra de
+negócio. Por isso a mesma varredura roda pela rota do cron, pela linha de comando
+(\arq{app/cli.py}, \code{python -m app.cli sweep}) e pelos testes, sem duplicação.
+\end{conceito}
+
+\section{Catálogo de padrões de projeto}
+
+\begin{longtable}{@{}>{\bfseries\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{6.4cm} >{\raggedright\arraybackslash}p{4.6cm}@{}}
+\toprule
+Padrão & Uso no Virgílio & Onde \\
+\midrule
+\endhead
+Service Layer & regras isoladas das rotas & \arq{*/service.py} \\
+Unit of Work & a \code{Session} acumula mudanças; evento e avisos gravados no mesmo \code{commit} & \arq{core/db.py} \\
+Transactional Outbox & avisos gravados com o evento e enviados depois, com reenvio & \arq{notify/service.py} \\
+State Machine & ciclo (OK, REMINDED, ALERTED), alerta, Virgílio, entrega & \arq{watch/models.py} \\
+Idempotência & varredura, SOS, ``vou verificar'', seguir aparelhos, link de confirmação & \arq{watch/service.py} \\
+Template Method (textos) & uma função por tipo de aviso devolve título, corpo e rota & \arq{notify/messages.py} \\
+DTO & esquemas Pydantic separados das entidades & \arq{*/schemas.py} \\
+Injeção de dependência & sessão e usuário atual por \code{Depends} & \arq{core/deps.py} \\
+Capability token & link pessoal do Virgílio e links de propósito & \arq{core/security.py} \\
+Singleton (cache) & configuração e cifrador criados uma vez (\code{@lru\_cache}) & \arq{core/config.py}, \arq{core/crypto.py} \\
+Clock injection & a varredura recebe \code{now}, o que permite simular dias nos testes & \code{sweep(db, now=...)} \\
+\bottomrule
+\end{longtable}
+
+\begin{conceito}{Transactional Outbox}
+Enviar o e-mail dentro da transação acoplaria o banco a um serviço externo; enviar depois do
+\code{commit} pode perder o aviso se o processo cair entre um passo e outro. O \emph{Outbox} resolve
+gravando a intenção de envio (\code{deliveries}) na mesma transação do evento. Um despachante lê as
+pendentes, envia e marca o resultado. Referência: Chris Richardson, \emph{Microservices Patterns}, cap.~3.
+\end{conceito}
+
+\begin{conceito}{Capability token}
+Em vez de identificar \emph{quem} acessa (login), o portador de um segredo imprevisível ganha uma
+capacidade restrita. O link do Virgílio usa 24 bytes aleatórios (\code{secrets.token\_urlsafe}),
+cerca de 192 bits: inviável de adivinhar. A contrapartida é que quem tiver o link age como o Virgílio,
+daí a revelação condicionada ao alerta.
+\end{conceito}
+
+% =============================================================================
+\chapter{O ciclo de prova de vida}\label{cap:ciclo}
+
+\section{Linha do tempo}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \draw[thick,-{Stealth}] (0,0) -- (14.5,0);
+  \foreach \x/\marco/\evento in {0/check-in/{prova de vida},6/due\_at/{lembrete},10/alert\_at/{alerta}} {
+    \draw[thick] (\x,0.2) -- (\x,-0.2);
+    \node[font=\scriptsize\bfseries,above] at (\x,0.25) {\texttt{\marco}};
+    \node[font=\scriptsize,below,align=center] at (\x,-0.25) {\evento};
+  }
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},draw=marca] (0,-0.9) -- node[below=4pt,font=\scriptsize,text=marca]{$x$ dias (\code{interval\_days})} (6,-0.9);
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},draw=dourado] (6,-0.9) -- node[below=4pt,font=\scriptsize,text=dourado]{$y$ dias (\code{grace\_days})} (10,-0.9);
+  \node[font=\scriptsize,align=center,text=perigo] at (12.3,-1.25) {avisos repetidos a cada $\sim$20 h,\\até alguém assumir (máx.~7)};
+  \fill[marca!12] (0,0.05) rectangle (6,0.15);
+  \fill[dourado!25] (6,0.05) rectangle (10,0.15);
+  \fill[perigo!20] (10,0.05) rectangle (14.3,0.15);
+\end{tikzpicture}
+\caption{Um ciclo. Qualquer prova de vida volta ao início.}
+\end{figure}
+
+O início do ciclo (\code{base\_at}) é a última prova de vida ou o fim de uma pausa, o que for mais
+recente. A pausa conta como prova de vida porque a pessoa avisou, com antecedência, que estaria
+indisponível. As datas derivadas (\code{due\_at}, \code{alert\_at}) não são gravadas: são calculadas
+por métodos de \code{Watch}, o que evita inconsistência quando a pessoa muda $x$ ou $y$.
+
+\section{Máquina de estados do ciclo}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[->,>=Stealth,node distance=2.6cm,auto,
+  every state/.style={draw=tinta,fill=marca!10,minimum size=1.7cm,font=\scriptsize\bfseries},
+  every edge/.style={draw,thick},
+  lbl/.style={font=\scriptsize,align=center}]
+  \node[state,initial,initial text={}] (OK) {OK};
+  \node[state,right=of OK,fill=dourado!18] (RE) {REMINDED};
+  \node[state,right=of RE,fill=perigo!15] (AL) {ALERTED};
+  \path (OK) edge node[lbl]{agora $\geq$ due\_at\\lembrete} (RE)
+        (RE) edge node[lbl]{agora $\geq$ alert\_at\\abre alerta} (AL)
+        (RE) edge[bend left=35] node[lbl,below]{prova de vida} (OK)
+        (AL) edge[bend left=45] node[lbl,below]{prova de vida, ou Virgílio ``encontrei, está bem''\\(alerta encerrado, Virgílios avisados)} (OK)
+        (RE) edge[loop above] node[lbl]{a cada $\sim$20 h:\\novo lembrete} (RE)
+        (AL) edge[loop right] node[lbl,right]{a cada $\sim$20 h:\\lembrete à pessoa;\\sem ``vou verificar'',\\novo alerta} (AL);
+  \node[lbl,draw=perigo,rounded corners=2pt,inner sep=3pt,above=1.3cm of AL] (sos) {SOS\\\scriptsize(de OK ou REMINDED)};
+  \draw[->,thick,perigo] (sos) -- (AL);
+\end{tikzpicture}
+\caption{Estados de \code{watches.state}.}
+\end{figure}
+
+Durante uma pausa, a varredura ignora o ciclo. Ao ajustar $x$, $y$ ou a pausa num ciclo em
+REMINDED cujo novo prazo ainda não venceu, o estado volta para OK e o lembrete enviado deixa de valer.
+
+\section{A varredura}
+
+\begin{lstlisting}[language=Python,caption={Núcleo de \code{watch.service.sweep} (simplificado).}]
+for watch in watches_ativos.with_for_update(of=Watch, skip_locked=True):
+    if watch.is_paused(now): continue
+    if watch.state == OK and now >= watch.due_at(now):
+        watch.state = REMINDED; enfileira lembrete
+    elif watch.state == REMINDED:
+        if now >= watch.alert_at(now): abre alerta MISSED; avisa Virgílios
+        elif passou 20 h do último lembrete: enfileira novo lembrete
+    elif watch.state == ALERTED:
+        lembra a pessoa a cada 20 h
+        if ninguém assumiu e notify_count < 7 e passou 20 h: avisa de novo
+commit()
+dispatch()   # envia a fila (inclusive pendências de rodadas anteriores)
+\end{lstlisting}
+
+\begin{nota}
+O intervalo de repetição é de 20 horas, e não 24, de propósito: com um cron diário, pequenas
+variações de horário fariam um intervalo de ``23 h 59 min'' pular um dia inteiro.
+\end{nota}
+
+\section{Sequência: do silêncio ao encerramento}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[x=1cm,y=-0.62cm,font=\scriptsize]
+  \foreach \x/\n in {0/Cron,3/API,6/Banco,9/{SMTP e Expo},12.5/Virgílio} {
+    \node[caixa,font=\scriptsize\bfseries,inner sep=3pt] at (\x,0) {\n};
+    \draw[suave,dashed] (\x,0.6) -- (\x,15.3);
+  }
+  \newcommand{\msg}[4]{\draw[seta] (#1,#3) -- node[rotulo,above]{#4} (#2,#3);}
+  \msg{0}{3}{1.5}{GET /internal/sweep}
+  \msg{3}{6}{2.5}{watches vencidos (FOR UPDATE SKIP LOCKED)}
+  \msg{3}{6}{3.7}{state=ALERTED; INSERT alerts, deliveries}
+  \msg{3}{6}{4.9}{COMMIT}
+  \msg{3}{6}{6.1}{deliveries PENDING}
+  \msg{3}{9}{7.3}{e-mail e push com link /v/token}
+  \msg{9}{12.5}{8.5}{alerta}
+  \msg{3}{6}{9.7}{status=SENT}
+  \msg{12.5}{3}{11.0}{POST /guardian/token/ack}
+  \msg{3}{9}{12.2}{ACK aos outros Virgílios}
+  \msg{12.5}{3}{13.5}{POST /guardian/token/resolve}
+  \msg{3}{9}{14.7}{RESOLVED aos outros; ciclo volta a OK}
+\end{tikzpicture}
+\caption{Diagrama de sequência simplificado de um alerta.}
+\end{figure}
+
+% =============================================================================
+\chapter{Avisos: fila de saída e canais}\label{cap:avisos}
+
+\section{Tipos de aviso}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l l Y@{}}
+\toprule
+Tipo & Destinatário & Conteúdo \\
+\midrule
+REMINDER & a pessoa & ``Você está bem?''; link de confirmação em um clique; data do alerta e nomes dos Virgílios \\
+ALERT & Virgílios aceitos & motivo (sem resposta ou SOS), última prova de vida, link pessoal, telefones de emergência \\
+ACK & demais Virgílios & ``fulano vai verificar'' \\
+RESOLVED & demais Virgílios & ``está bem'', confirmado pela pessoa ou por um Virgílio \\
+INVITE & Virgílio convidado com e-mail & explicação do papel e link de aceite \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Cada aviso gera uma linha por canal disponível: e-mail se houver endereço; push se o destinatário
+(a pessoa, ou a conta vinculada do Virgílio) tiver aparelho ativo. Os textos ficam em
+\arq{notify/messages.py} e são montados no momento do envio.
+
+\section{Despacho e descarte}
+
+O despachante (\code{notify.service.dispatch}) trava as linhas pendentes com
+\code{FOR UPDATE SKIP LOCKED}, o que permite execuções simultâneas (varredura e ação do usuário) sem
+envio duplicado. Antes de enviar, reavalia o contexto e descarta (\code{SKIPPED}) o que perdeu o sentido:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}l Y@{}}
+\toprule
+\normalfont\bfseries Motivo & Situação \\
+\midrule
+stale & criado há mais de 3 dias (a varredura gera outro, se ainda for o caso) \\
+already\_checked\_in & lembrete, mas a pessoa já confirmou \\
+alert\_resolved & alerta ou ACK de um alerta já encerrado \\
+guardian\_inactive / invite\_answered & Virgílio recusou, saiu ou já respondeu ao convite \\
+user\_inactive & conta suspensa ou removida \\
+no\_email / mail\_disabled & sem endereço, ou SMTP não configurado \\
+no\_device & sem aparelho ativo; ou Expo respondeu \code{DeviceNotRegistered} (o aparelho é desativado) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Falhas transitórias (SMTP recusou, Expo indisponível) incrementam \code{attempts}; na quinta, a entrega
+vai a FAILED. O envio imediato após uma ação (\code{dispatch\_quietly}) nunca derruba a ação: se
+falhar, a varredura seguinte reenvia.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[->,>=Stealth,node distance=3cm,auto,
+  every state/.style={draw=tinta,fill=marca!10,minimum size=1.5cm,font=\scriptsize\bfseries},
+  every edge/.style={draw,thick},lbl/.style={font=\scriptsize,align=center}]
+  \node[state,initial,initial text={}] (P) {PENDING};
+  \node[state,accepting,right=of P] (S) {SENT};
+  \node[state,accepting,above right=0.6cm and 2.4cm of P] (K) {SKIPPED};
+  \node[state,accepting,below right=0.6cm and 2.4cm of P] (F) {FAILED};
+  \path (P) edge node[lbl]{aceito} (S)
+        (P) edge node[lbl]{perdeu\\o sentido} (K)
+        (P) edge node[lbl,below left]{5ª falha} (F)
+        (P) edge[loop above] node[lbl]{falha: nova tentativa} (P);
+\end{tikzpicture}
+\caption{Estados de uma entrega (\code{deliveries.status}).}
+\end{figure}
+
+\section{Lembrete local no app}
+
+Além do push, o app agenda com \code{expo-notifications} uma notificação local (gatilho de data) para
+\code{due\_at} sempre que lê o ciclo em estado OK, e a cancela ao sair da conta. Ela funciona sem
+internet e sem configuração de push.
+
+% =============================================================================
+\chapter{Modelagem de dados}
+
+\section{Modelo conceitual}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.2cm and 1.0cm,
+  rel/.style={draw=tinta!70,thick},
+  card/.style={font=\scriptsize,inner sep=1pt,fill=white}]
+  \node[tabela] (users) {\textbf{users}\nodepart{two}id, name, email (único),\\password\_hash, token\_version,\\phone, address, status};
+  \node[tabela,right=of users] (watch) {\textbf{watches}\nodepart{two}user\_id (PK), interval\_days,\\grace\_days, last\_check\_in\_at,\\paused\_until, state,\\last\_location\_enc/\_at};
+  \node[tabela,right=of watch] (alerts) {\textbf{alerts}\nodepart{two}user\_id, reason, status,\\notify\_count, acknowledged\_*,\\resolved\_by, resolved\_*};
+  \node[tabela,below=of users] (instr) {\textbf{instructions}\nodepart{two}user\_id, title, body\_enc,\\position};
+  \node[tabela,below=of watch] (guard) {\textbf{guardians}\nodepart{two}user\_id, name, email, phone,\\token (único), status,\\linked\_user\_id};
+  \node[tabela,below=of alerts] (deliv) {\textbf{deliveries}\nodepart{two}kind, channel,\\subject\_user\_id, guardian\_id,\\alert\_id, status, attempts};
+  \node[tabela,below=of instr] (push) {\textbf{push\_tokens}\nodepart{two}user\_id, token (único),\\platform, disabled\_at};
+  \draw[rel] (users) -- node[card]{1 : 1} (watch);
+  \draw[rel] (watch) -- node[card]{1 : N} (alerts);
+  \draw[rel] (users) -- node[card]{1 : 0..20} (instr);
+  \draw[rel] (users.south east) -- node[card]{1 : 0..5} (guard.north west);
+  \draw[rel] (alerts) -- node[card]{1 : N} (deliv);
+  \draw[rel] (guard) -- node[card]{1 : N} (deliv);
+  \draw[rel] (users.west) -- ++(-0.35,0) |- node[card,pos=0.3]{1 : N} (push.west);
+\end{tikzpicture}
+\caption{Entidades. \code{push\_tokens} pertence à conta (da pessoa ou de um Virgílio com o app); o Virgílio chega aos aparelhos pela conta vinculada (\code{guardians.linked\_user\_id}).}
+\end{figure}
+
+\section{Dicionário das tabelas}
+
+\begin{longtable}{@{}>{\bfseries\ttfamily\small}p{3.2cm} >{\raggedright\arraybackslash}p{11.3cm}@{}}
+\toprule
+\normalfont\bfseries Tabela & Finalidade e regras \\
+\midrule
+\endhead
+users & pessoa; \code{email} único em minúsculas; senha em scrypt; \code{token\_version} invalida sessões e links de redefinição; telefone e endereço revelados aos Virgílios só em alerta. \\
+watches & um ciclo por pessoa (chave = \code{user\_id}); estado, parâmetros $x$ e $y$, pausa, última prova de vida e última localização cifrada. \\
+alerts & alerta aberto ou encerrado: motivo (MISSED ou SOS), contagem de avisos, quem assumiu, como foi encerrado (USER ou GUARDIAN). \\
+guardians & Virgílio: contato, relação, token do link pessoal, status, conta vinculada opcional. Nome vazio = convite por link pendente. \\
+instructions & instruções com corpo cifrado e ordem de exibição. \\
+push\_tokens & aparelhos Expo; um aparelho pertence à última conta que entrou nele; \code{disabled\_at} quando desinstalado. \\
+deliveries & fila de saída: tipo, canal, pessoa acompanhada, Virgílio e alerta de referência, status, tentativas, último erro. \\
+\bottomrule
+\end{longtable}
+
+\section{Restrições de integridade}
+
+\begin{itemize}
+  \item \textbf{Chaves estrangeiras} em todos os relacionamentos. \code{deliveries} usa \code{ON DELETE CASCADE} para Virgílio e alerta (remover um Virgílio remove seus avisos pendentes); \code{alerts} e \code{guardians.linked\_user\_id} usam \code{SET NULL}.
+  \item \textbf{CHECK} de domínio para todos os estados (\code{ck\_watches\_state}, \code{ck\_alerts\_reason}, \code{ck\_deliveries\_kind}...).
+  \item \textbf{CHECK} de regra: \code{interval\_days >= 1} e \code{grace\_days >= 1}. Os limites superiores (30, 14) são configuráveis e validados na API.
+  \item \textbf{Unicidade}: \code{users.email}, \code{guardians.token}, \code{push\_tokens.token}.
+\end{itemize}
+
+\section{Tipos e convenções}
+
+\begin{itemize}
+  \item \textbf{Datas} em UTC com fuso (\code{timestamptz}) via \code{UTCDateTime}, herdado do promoAE; conversão para \code{America/Sao\_Paulo} só nos textos de e-mail e, nos clientes, para o fuso do aparelho.
+  \item \textbf{Enumerações} como \code{StrEnum} no Python e \code{VARCHAR} + CHECK no banco.
+  \item \textbf{Dados cifrados} em \code{TEXT} (token Fernet em base64). A localização é um JSON \code{\{lat, lng, accuracy\_m\}} com 6 casas decimais (cerca de 10 cm), cifrado.
+\end{itemize}
+
+\section{Migrações}
+
+O esquema está na migração \code{0001} (\arq{backend/alembic/versions/0001\_initial\_schema.py}),
+aplicada no Neon pela conexão direta (sem \emph{pooler}). O convite por link foi feito sem nova migração (ADR-08).
+
+% =============================================================================
+\chapter{Comportamento das demais entidades}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y@{}}
+\toprule
+Entidade & Estados e transições \\
+\midrule
+Alerta & OPEN $\to$ RESOLVED (pela pessoa ou por um Virgílio). Enquanto aberto: \code{notify\_count} cresce até 7; \code{acknowledged\_*} é preenchido uma única vez (idempotente) \\
+Virgílio & PENDING $\to$ ACCEPTED ou DECLINED; ACCEPTED $\to$ DECLINED (saiu); DECLINED $\to$ ACCEPTED (aceitou depois) ou PENDING (convite reenviado) \\
+Entrega & PENDING $\to$ SENT, SKIPPED ou FAILED (cap.~\ref{cap:avisos}) \\
+Aparelho & ativo $\to$ desativado (\code{DeviceNotRegistered}); reativado ao registrar de novo \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\paragraph{Convite por link.} Criado com nome vazio e sem contato. No aceite, a pessoa informa nome e
+e-mail (ou a API usa os da conta do app, se ela aceitar logada). O primeiro aceite fixa o nome; aceites
+seguintes não o substituem. Conta no limite de 5 Virgílios ativos.
+
+% =============================================================================
+\chapter{Concorrência e consistência}
+
+\begin{itemize}
+  \item \textbf{Varredura e despacho paralelos:} \code{SELECT ... FOR UPDATE SKIP LOCKED} faz cada
+        execução pegar linhas diferentes; duas varreduras simultâneas (Vercel Cron e GitHub Actions no
+        mesmo minuto) não duplicam lembretes nem alertas.
+  \item \textbf{Evento e aviso atômicos:} abrir o alerta, mudar o estado e enfileirar avisos acontecem no mesmo \code{commit}.
+  \item \textbf{Idempotência:} SOS com alerta aberto não abre outro; ``vou verificar'' repetido não reenvia;
+        registrar o mesmo aparelho em paralelo trata o \code{IntegrityError}.
+  \item \textbf{Link de confirmação vinculado ao ciclo:} o token leva \code{base}, o início do ciclo em
+        milissegundos. Depois de qualquer nova prova de vida, o link antigo não tem efeito (responde
+        ``já confirmado''), o que impede que um e-mail velho mascare um sumiço atual.
+\end{itemize}
+
+\begin{conceito}{SKIP LOCKED}
+\code{FOR UPDATE} trava as linhas lidas até o fim da transação; com \code{SKIP LOCKED}, outra transação
+que tentar ler as mesmas linhas simplesmente as pula, em vez de esperar. É a forma clássica de usar
+uma tabela do PostgreSQL como fila com vários consumidores. O SQLite dos testes ignora a cláusula; por
+isso a suíte também roda contra PostgreSQL (\code{TEST\_DATABASE\_URL}).
+\end{conceito}
+
+% =============================================================================
+\chapter{Interfaces: API REST}
+
+\section{Convenções}
+
+JSON sobre HTTPS, prefixo \code{/api}, autenticação \code{Authorization: Bearer <JWT>}. Erros de negócio
+seguem o formato do promoAE: \texttt{\{detail: \{code, message\}\}}, com código estável para o
+cliente e mensagem pronta para exibir.
+
+\section{Rotas}
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{6.2cm} >{\raggedright\arraybackslash}p{8.3cm}@{}}
+\toprule
+\textbf{Rota} & \textbf{Uso} \\
+\midrule
+\endhead
+\code{POST /auth/register}, \code{/auth/login} & conta; o cadastro cria o ciclo e conta como primeira prova de vida \\
+\code{POST /auth/password/forgot}, \code{/reset} & redefinição por link de 1 hora; resposta igual exista ou não a conta \\
+\code{GET/PATCH/DELETE /auth/me}, \code{PUT /auth/me/password} & perfil, senha, exclusão \\
+\code{GET/PUT /me/watch} & estado do ciclo (com datas calculadas e contagem de Virgílios alcançáveis); ajuste de $x$, $y$ e pausa \\
+\code{POST /me/check-in} \{location?\} & ``Estou bem'' \\
+\code{POST /me/sos} \{location?\} & pedido de ajuda \\
+\code{DELETE /me/location} & apaga a última localização \\
+\code{POST /check-in/link} \{token, location?\} & confirmação pelo link do e-mail, sem login \\
+\code{GET/POST /me/guardians}, \code{PUT/DELETE /me/guardians/\{id\}} & Virgílios \\
+\code{POST /me/guardians/link} & convite por link \\
+\code{POST /me/guardians/\{id\}/resend} & reenvia o convite por e-mail \\
+\code{GET /me/protecting} & pessoas de quem sou Virgílio (conta vinculada) \\
+\code{GET /guardian/\{token\}} & visão do Virgílio (dados sensíveis só com alerta aberto) \\
+\code{POST /guardian/\{token\}/accept|decline|ack|resolve} & ações do Virgílio \\
+\code{GET/POST /me/instructions}, \code{PUT/DELETE /me/instructions/\{id\}} & instruções \\
+\code{POST /me/push-tokens}, \code{/unregister} & aparelhos \\
+\code{GET /config}, \code{/health} & configuração pública (URL do site, e-mail ativo, limites, link do APK) \\
+\code{GET /internal/sweep} & varredura; exige \code{CRON\_SECRET} \\
+\bottomrule
+\end{longtable}
+
+\section{Contrato compartilhado entre clientes}
+
+Os tipos TypeScript (\arq{frontend/src/lib/types.ts}) e a formatação (\arq{frontend/src/lib/format.ts})
+são usados pelo site e, pelo apelido \code{@shared/*}, pelo app. A formatação de tempo relativo
+(``em 2 dias'') é feita à mão porque o Hermes não tem \code{Intl.RelativeTimeFormat}.
+
+% =============================================================================
+\chapter{Frontend web}
+
+\section{Tecnologias e estrutura}
+
+Next.js 16.4.6 (App Router), React 19, TypeScript estrito, CSS próprio com tokens de cor e modo
+escuro. Todas as páginas são componentes de cliente que chamam a API na mesma origem.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}l Y@{}}
+\toprule
+\normalfont\bfseries Rota & Tela \\
+\midrule
+/ & apresentação (visitante) ou painel com o botão ``Estou bem'', localização opcional, SOS e progresso do ciclo \\
+/virgilios & convite por link, cadastro, compartilhamento por WhatsApp, reenvio, remoção \\
+/instrucoes & instruções com sugestões prontas \\
+/protegidos, /protegidos/[token] & pessoas de quem sou Virgílio; destino das notificações \\
+/v/[token] & link pessoal do Virgílio: convite e, em alerta, contato, mapa, instruções e ações \\
+/confirmar & confirmação em um clique a partir do e-mail, com opção de enviar a localização \\
+/conta & ciclo, pausa, dados, senha, exclusão \\
+/entrar, /esqueci-senha, /redefinir-senha & autenticação \\
+/termos, /privacidade & documentos legais \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Decisões específicas}
+
+\begin{itemize}
+  \item \textbf{Mesma origem:} a Vercel roteia \code{/api/*} para a API; localmente, o Next.js faz \emph{proxy}. Sem CORS.
+  \item \textbf{Componente único do Virgílio} (\arq{components/GuardianPanel.tsx}) para \code{/v/[token]} e \code{/protegidos/[token]}; atualiza a cada 30 s durante um alerta.
+  \item \textbf{Mapa sem chave:} \emph{iframe} do OpenStreetMap com marcador; link para o Google Maps.
+  \item \textbf{Geolocalização do navegador} só quando a pessoa escolhe compartilhar; a preferência fica no \code{localStorage}. Se a permissão for negada, a prova de vida segue sem localização.
+  \item \textbf{Configuração em tempo de execução} (\code{/api/config}): ligar o botão do APK ou mudar limites não exige novo build.
+\end{itemize}
+
+% =============================================================================
+\chapter{Aplicativo mobile}
+
+\section{Tecnologias e estrutura}
+
+Expo SDK 58, React Native 0.88, Expo Router (rotas por arquivo), \code{expo-secure-store} (sessão no
+Keychain/Keystore), \code{expo-notifications}, \code{expo-location} e \code{expo-web-browser}.
+Abas: Prova de vida, Virgílios, Instruções, Protegidos e Conta; telas de entrada (modal) e de detalhe do protegido.
+
+\section{Decisões específicas}
+
+\begin{itemize}
+  \item \textbf{Localização só durante o uso:} \code{ACCESS\_BACKGROUND\_LOCATION} bloqueada no manifesto; a posição é lida apenas no toque, com limite de 10 s e recurso à última posição conhecida.
+  \item \textbf{Notificações:} permissão pedida logo após o login (lembretes são o centro do app); canal Android \code{virgilio} com prioridade máxima; ao tocar, apenas rotas internas conhecidas são abertas (\code{/} ou \code{/protegidos/<token>}), porque o conteúdo do aviso vem de fora do app.
+  \item \textbf{Convite por link:} gera o link e abre o compartilhamento nativo do sistema.
+  \item \textbf{Build Android local com teto de recursos} (\arq{mobile/scripts/build-android.sh}, herdado do promoAE): \code{systemd-run} limita RAM e CPU, \code{nice} reduz a prioridade, só arm64. A versão 1.0.1 foi gerada com 6 GB e 4 núcleos em cerca de 4 minutos.
+  \item \textbf{Versão:} \code{versionCode} incrementado a cada APK publicado, para instalar por cima.
+\end{itemize}
+
+% =============================================================================
+\chapter{Segurança e privacidade}\label{cap:seguranca}
+
+\section{Autenticação e sessões}
+
+\begin{itemize}
+  \item Senhas com \textbf{scrypt} ($N=2^{14}$, $r=8$, $p=1$, sal de 16 bytes), com custo igual quando o e-mail não existe (não revela cadastros pelo tempo de resposta).
+  \item \textbf{JWT} HS256 de 30 dias com \code{token\_version}: redefinir a senha incrementa a versão e derruba todas as sessões.
+  \item \textbf{Tokens de propósito} (campo \code{typ}): \code{reset} (1 h, vinculado à versão, uso único) e \code{checkin} (14 dias, vinculado ao ciclo). Um tipo não serve no lugar de outro.
+  \item Produção recusa subir com \code{JWT\_SECRET} padrão ou curto, sem banco ou com SQLite.
+\end{itemize}
+
+\section{Autorização}
+
+Toda rota \code{/me/*} opera apenas sobre dados do usuário da sessão; recursos de outra pessoa
+respondem 404 (não revelam existência). A visão do Virgílio aplica a regra de revelação:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y Y Y@{}}
+\toprule
+Dado & Convite pendente & Aceito, sem alerta & Aceito, alerta aberto \\
+\midrule
+Nome da pessoa & sim & sim & sim \\
+Estado e última prova de vida & não & sim & sim \\
+Telefone, endereço, e-mail & não & não & sim \\
+Instruções & não & não & sim \\
+Última localização & não & não & sim \\
+Outros Virgílios & não & não & sim (nomes) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Criptografia em repouso}
+
+O módulo \code{core/crypto.py} usa Fernet (AES-128-CBC + HMAC-SHA256). A chave vem da variável
+\code{INSTRUCTIONS\_KEY}; se ela estiver ausente, a chave é derivada do \code{JWT\_SECRET} por SHA-256,
+com um rótulo próprio.
+Se a chave mudar, a leitura não quebra a página: mostra um aviso de instrução ilegível.
+
+\section{Defesas adicionais}
+
+\begin{itemize}
+  \item Limites de requisições por IP e escopo (ex.: login 20/10 min, esqueci a senha 5/10 min, SOS 10/10 min, link do Virgílio 60/10 min).
+  \item Rota do cron com comparação em tempo constante (\code{hmac.compare\_digest}).
+  \item Documentação OpenAPI desativada em produção.
+  \item Segredos fora do repositório: \code{.env.vercel.local} e \code{backend/.env} ignorados pelo git; o modelo versionado fica em branco.
+\end{itemize}
+
+\section{LGPD}
+
+Coleta mínima; localização opcional a cada envio, com só a última guardada e apagável; aceite dos
+Termos registrado com data; exclusão da conta apaga ciclo, alertas, Virgílios, instruções, aparelhos e
+avisos. Quando a pessoa é Virgílio de outros, o vínculo é desfeito e o Virgílio continua a receber por e-mail.
+
+% =============================================================================
+\chapter{Testes e qualidade}
+
+\section{Estratégia}
+
+Testes de integração da API com \code{TestClient}, sobre banco recriado a cada teste. SMTP e Expo são
+substituídos por dublês que guardam as mensagens, e a passagem do tempo é simulada passando \code{now}
+para a varredura.
+
+\begin{center}
+\begin{tabular}{@{}lr p{8.6cm}@{}}
+\toprule
+Arquivo & Testes & O que cobre \\
+\midrule
+\arq{test\_cycle.py} & 13 & lembrete, alerta, repetição e limite, ``vou verificar'', SOS, pausa, link de um ciclo só, reenvio após falha de SMTP, push, cron \\
+\arq{test\_guardians.py} & 12 & convite por e-mail e por link, aceite, recusa, limites, revelação só em alerta, encerramento por Virgílio, criptografia \\
+\arq{test\_auth.py} & 6 & cadastro, login, senha, redefinição e revogação de sessões, exclusão \\
+\arq{test\_location.py} & 3 & localização oculta, revelada em alerta, apagada; validação de coordenadas \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Resultado: 34 casos aprovados, em SQLite e em PostgreSQL 16. A migração foi conferida com
+\code{alembic check} contra o PostgreSQL. Também foram feitos testes ponta a ponta locais (API + site
+em produção + navegador \emph{headless}).
+
+\section{Verificações estáticas}
+
+TypeScript estrito no site e no app; ESLint e \code{expo-doctor} (20/20) no app; \code{npm audit} sem
+vulnerabilidades no site (Next.js atualizado de 16.4.1 para 16.4.6, também no promoAE).
+
+% =============================================================================
+\chapter{Implantação e operação}
+
+\section{Ambientes}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}l Y@{}}
+\toprule
+Ambiente & Composição \\
+\midrule
+Local (Docker) & \code{docker compose}: Postgres, API (aplica migrações), site e serviço \code{cron} (varredura a cada 15 min) \\
+Produção (Vercel) & projeto único: \code{backend} (FastAPI serverless) em \code{/api/*}, \code{frontend} (Next.js) no resto; Neon em São Paulo \\
+Agendamento & Vercel Cron diário às 12h UTC; GitHub Actions (\arq{.github/workflows/sweep.yml}) no minuto 7 de cada hora \\
+App Android & APK em GitHub Releases (\code{mateus-n00b/virgilio}); botão no site via \code{ANDROID\_APK\_URL} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Configuração}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}l Y@{}}
+\toprule
+\normalfont\bfseries Variável & Uso \\
+\midrule
+ENV & \code{prod} em produção (\code{dev} expõe o link de redefinição na resposta) \\
+DATABASE\_URL & criada pela integração Neon (URL com \emph{pooling}) \\
+JWT\_SECRET & assinatura de sessões e links (32+ caracteres) \\
+INSTRUCTIONS\_KEY & chave Fernet; não pode ser trocada depois de haver dados \\
+FRONTEND\_URL & domínio usado nos links dos e-mails (e em \code{CORS\_ORIGINS}) \\
+SMTP\_* & e-mail (\code{HOST}, \code{PORT}, \code{USER}, \code{PASSWORD}, \code{FROM}); com Gmail, o remetente deve ser o próprio endereço da conta \\
+SUPPORT\_EMAIL & contato exibido no site \\
+CRON\_SECRET & protege a varredura (também como secret no GitHub, com \code{VIRGILIO\_URL}) \\
+ANDROID\_APK\_URL & link do APK exibido no site \\
+DEFAULT\_* e MAX\_* & ciclo padrão das contas novas e limites (Virgílios, intervalo, tolerância, pausa) \\
+EXPO\_ACCESS\_TOKEN & só com a segurança reforçada de push do EAS \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Particularidades do ambiente serverless}
+
+\begin{itemize}
+  \item Sem pool local (\code{NullPool}) e sem \emph{prepared statements} automáticos, por causa do PgBouncer do Neon.
+  \item Migrações pela URL sem \emph{pooler}, antes do deploy que depende delas.
+  \item E-mails enviados de forma síncrona na requisição (o ambiente pode congelar a função após a resposta); a fila garante o reenvio.
+  \item Limites por IP em memória valem por instância.
+\end{itemize}
+
+\section{Procedimento de publicação}
+
+\begin{enumerate}
+  \item Migrações no Neon (\code{alembic upgrade head}, URL sem \emph{pooler}).
+  \item \code{git push}; a Vercel publica os dois serviços. Conferir \code{/api/health}.
+  \item APK: \code{build-android.sh} com limite de memória; release no GitHub com o arquivo \code{virgilio.apk}.
+\end{enumerate}
+
+% =============================================================================
+\chapter{Riscos e dívida técnica}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}Y Y@{}}
+\toprule
+Item & Mitigação sugerida \\
+\midrule
+Atraso de até um dia no alerta se só o cron diário estiver ativo & manter o workflow horário; ou plano Pro da Vercel com cron horário \\
+E-mail por Gmail: limite diário de envio e entregabilidade & provedor transacional (Brevo, Resend) com domínio próprio e SPF/DKIM \\
+Alertas dependem de e-mail e push & canal adicional por WhatsApp (API oficial, template aprovado) ou SMS \\
+Recibos do Expo não verificados (``enviado'' = aceito pelo Expo) & consultar \code{/getReceipts} na varredura seguinte \\
+Link do Virgílio é segredo ao portador e pode ser reencaminhado & rotação de token pelo usuário; expiração de convites não aceitos \\
+JWT no \code{localStorage} do site (exposto a XSS) & \emph{Content Security Policy} estrita; ou cookie \code{HttpOnly} \\
+Sem segundo fator na conta & TOTP ou código por e-mail em ações sensíveis \\
+Limites por IP em memória & Redis gerenciado (Upstash) \\
+APK assinado com a chave de depuração & EAS Build com chave própria; publicação na Play Store \\
+Sem testes de interface & Playwright no site; testes de componentes no app \\
+Bases do promoAE e do Virgílio duplicadas & extrair os módulos comuns (\code{core}, clientes HTTP) para um pacote compartilhado \\
+Nome vazio como marcador de convite por link & coluna explícita na próxima migração que tocar \code{guardians} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =============================================================================
+\appendix
+\chapter{Roteiro de estudo}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}p{3.6cm} p{4.4cm} Y@{}}
+\toprule
+Tema & Onde ver no código & Para aprofundar \\
+\midrule
+Documentação de projeto & este documento & IEEE 1016-2009; arc42; Simon Brown, \emph{The C4 Model} \\
+Arquitetura e ADRs & cap.~5 & Bass, Clements e Kazman, \emph{Software Architecture in Practice} \\
+Outbox e mensageria & \arq{notify/service.py} & Richardson, \emph{Microservices Patterns}, cap.~3 \\
+Máquinas de estado e tempo & \arq{watch/models.py}, \arq{watch/service.py} & Kleppmann, \emph{Designing Data-Intensive Applications}, cap.~8 (relógios) \\
+Filas no PostgreSQL & \code{SKIP LOCKED} & documentação do PostgreSQL, \emph{The Locking Clause} \\
+Criptografia aplicada & \arq{core/crypto.py}, \arq{core/security.py} & Ferguson, Schneier e Kohno, \emph{Cryptography Engineering}; especificação Fernet \\
+Segurança web & autenticação e autorização & OWASP ASVS e OWASP Top 10 \\
+Privacidade & revelação condicionada & LGPD (Lei 13.709/2018); \emph{Privacy by Design} (Cavoukian) \\
+Testes & \arq{backend/tests/} & Khorikov, \emph{Unit Testing: Principles, Practices, and Patterns} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\paragraph{Exercícios sugeridos.}
+\begin{enumerate}
+  \item Desenhe a sequência de uma prova de vida pelo link do e-mail, do clique até o aviso RESOLVED aos Virgílios.
+  \item Remova o \code{SKIP LOCKED} da varredura: em que cenário dois lembretes iguais seriam enviados?
+  \item Escreva um ADR para adicionar alertas por WhatsApp, considerando custo, template e fila.
+  \item Proponha a migração que troca o nome vazio por uma coluna \code{open\_invite} sem perder dados.
+  \item Calcule o pior atraso de um alerta com $x=1$, $y=1$ e só o cron diário das 12h UTC.
+\end{enumerate}
+
+\end{document}
