@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { PushOptIn } from "@/components/PushOptIn";
 import { useEffect, useState } from "react";
 import { A11yControls } from "@/components/A11yControls";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -224,6 +225,7 @@ export default function AccountPage() {
           <h1>Conta</h1>
           <Cycle />
           <Profile user={user} />
+          <PushOptIn variant="card" />
           <section className="card" id="leitura">
             <h2>Leitura</h2>
             <p className="muted small">Letra maior e alto contraste para enxergar melhor. Vale só neste aparelho.</p>

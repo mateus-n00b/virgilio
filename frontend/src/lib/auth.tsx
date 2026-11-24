@@ -46,10 +46,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(res.access_token);
     setSignedOut(false);
     setUser(res.user);
+    void import("./webpush").then((m) => m.refreshPush()).catch(() => {});
   }, []);
 
   const signOut = useCallback(() => {
-    setToken(null);
+    // Desliga os avisos deste aparelho antes de apagar o token (a chamada precisa dele): o aparelho
+    // não deve continuar avisando a pessoa que saiu.
+    const old = getToken();
+    void import("./webpush")
+      .then((m) => m.disablePush())
+      .catch(() => {})
+      .finally(() => {
+        if (getToken() === old) setToken(null); // não apaga um login novo feito nesse meio-tempo
+      });
     setSignedOut(true);
     setUser(null);
   }, []);

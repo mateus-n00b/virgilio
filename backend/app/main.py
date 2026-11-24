@@ -55,6 +55,7 @@ def public_config() -> dict:
         "mail_enabled": mail_configured(),
         "support_email": s.support_email,
         "android_apk_url": s.android_apk_url or None,
+        "vapid_public_key": s.vapid_public_key if s.web_push_enabled else None,
         "limits": {
             "max_interval_days": s.max_interval_days,
             "max_grace_days": s.max_grace_days,

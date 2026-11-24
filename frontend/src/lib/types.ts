@@ -21,6 +21,8 @@ export interface AppConfig {
   mail_enabled: boolean;
   support_email: string;
   android_apk_url: string | null;
+  /** Chave pública do Web Push; null = avisos no navegador desativados. */
+  vapid_public_key?: string | null;
   limits: {
     max_interval_days: number;
     max_grace_days: number;

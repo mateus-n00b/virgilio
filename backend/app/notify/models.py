@@ -8,15 +8,21 @@ from app.core.db import Base, UTCDateTime, utcnow
 
 
 class PushToken(Base):
-    """Aparelho que recebe push (Expo push token). Um aparelho pertence ao último usuário que entrou nele."""
+    """Aparelho que recebe push. Um aparelho pertence ao último usuário que entrou nele.
+
+    android/ios: app nativo (token do Expo). web: navegador ou app instalado pelo Chrome (Web Push):
+    token = endpoint da inscrição; web_p256dh/web_auth = chaves para cifrar a mensagem.
+    """
 
     __tablename__ = "push_tokens"
-    __table_args__ = (CheckConstraint("platform IN ('android','ios')", name="ck_push_tokens_platform"),)
+    __table_args__ = (CheckConstraint("platform IN ('android','ios','web')", name="ck_push_tokens_platform"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    token: Mapped[str] = mapped_column(String(255), unique=True)
+    token: Mapped[str] = mapped_column(String(1024), unique=True)
     platform: Mapped[str] = mapped_column(String(10))
+    web_p256dh: Mapped[str | None] = mapped_column(String(128))
+    web_auth: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     disabled_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # app desinstalado (DeviceNotRegistered)

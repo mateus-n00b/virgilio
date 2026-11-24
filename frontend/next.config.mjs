@@ -9,6 +9,10 @@ const API_INTERNAL_URL = (process.env.API_INTERNAL_URL ?? "http://localhost:8000
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  async headers() {
+    // O service worker precisa ser revalidado sempre (atualizações chegam na hora)
+    return [{ source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }, { key: "Service-Worker-Allowed", value: "/" }] }];
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_INTERNAL_URL}/api/:path*` }];
   },

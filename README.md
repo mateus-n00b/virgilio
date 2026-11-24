@@ -23,6 +23,10 @@ check-in ──── x dias ────▶ prazo ──── y dias ───
 
 **Virgílios não precisam de conta.** Recebem um link pessoal (`/v/<token>`) pelo WhatsApp (botão pronto no app), por qualquer outro meio ou por e-mail. Ao aceitar, informam o e-mail onde querem receber os alertas. Quem aceita estando logado no app passa a receber push também e vê a pessoa na aba **Protegidos**.
 
+### No celular sem instalar nada da loja (PWA)
+
+O site pode ser **instalado como app** (Android: convite “Instalar o Virgílio como app?”; iPhone: Compartilhar → Adicionar à Tela de Início) e receber **avisos push no navegador** (Web Push com VAPID, mensagem cifrada de ponta a ponta): o lembrete da prova de vida e, para quem é Virgílio de alguém, os alertas — que ficam na tela até a pessoa tocar. O navegador entra na mesma fila de avisos do app nativo (reenvio pelo cron, aparelho desativado quando a inscrição expira). Ative em **Conta → Avisos neste aparelho** ou no aviso da Prova de vida. Configure `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` (gere com `python -m app.cli vapid-keys`); sem elas, o site funciona normalmente, só sem avisos no navegador. O service worker não guarda nenhum dado pessoal em cache.
+
 ### Privacidade
 
 - **Instruções** e **localização** ficam criptografadas no banco (Fernet, chave fora do banco: `INSTRUCTIONS_KEY`).

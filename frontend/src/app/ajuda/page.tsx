@@ -56,6 +56,7 @@ const STEPS = [
   { id: "alerta", label: "Quando há um alerta" },
   { id: "conta", label: "Conta e pausa" },
   { id: "leitura", label: "Letra maior" },
+  { id: "celular", label: "App no celular e avisos" },
 ];
 
 export default function Ajuda() {
@@ -290,6 +291,36 @@ export default function Ajuda() {
           </li>
         </ol>
         <p className="muted">A escolha fica guardada neste aparelho. No celular, você também pode ampliar com dois dedos.</p>
+      </Step>
+
+      <Step
+        id="celular"
+        title="9. App no celular e avisos"
+        where="Aviso no pé da página e no alto da Prova de vida (no celular)"
+        shot={{
+          src: "/tutorial/celular.webp",
+          h: 1720,
+          alt: "Celular com o aviso Receber avisos neste aparelho, com os botões Ativar avisos e Agora não, e o convite Instalar o Virgílio como app. Ao lado, o quadro Avisos neste aparelho, na Conta, mostrando que estão ativados.",
+          caption: "Instale o Virgílio e ative os avisos.",
+        }}
+      >
+        <ol className="callouts">
+          <li>
+            <strong>Instalar o Virgílio como app</strong>: no Android, toque em <strong>Instalar</strong> e o Virgílio ganha um ícone na tela inicial. No
+            iPhone, toque em <strong>Compartilhar</strong> (o quadrado com a seta para cima) e depois em <strong>Adicionar à Tela de Início</strong>.
+          </li>
+          <li>
+            <strong>Ativar avisos</strong>: toque no botão e permita quando o celular perguntar. Você recebe na hora o lembrete da prova de vida e, se for
+            Virgílio de alguém, o alerta quando a pessoa não responder ou pedir ajuda.
+          </li>
+          <li>
+            Mudou de ideia? Na <strong>Conta</strong>, em <strong>Avisos neste aparelho</strong>, dá para desativar a qualquer momento.
+          </li>
+        </ol>
+        <p className="muted">
+          Os alertas sobre quem você protege ficam na tela até você tocar neles. Os e-mails continuam chegando normalmente: os avisos no celular são um
+          reforço. No iPhone, os avisos funcionam com o Virgílio na Tela de Início (iOS 16.4 ou mais novo).
+        </p>
       </Step>
 
       <section className="tour-step" id="palavras">

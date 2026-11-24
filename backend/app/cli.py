@@ -2,6 +2,7 @@
 
     python -m app.cli sweep      # varredura do ciclo de prova de vida + envio dos avisos pendentes
     python -m app.cli dispatch   # só reenvia os avisos pendentes
+    python -m app.cli vapid-keys # gera o par de chaves do Web Push (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)
 """
 import json
 import sys
@@ -14,6 +15,12 @@ from app.watch import service as watch
 
 def main(argv: list[str]) -> None:
     cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "vapid-keys":
+        from app.notify.webpush import generate_vapid_keys
+
+        pub, priv = generate_vapid_keys()
+        print(f"VAPID_PUBLIC_KEY={pub}\nVAPID_PRIVATE_KEY={priv}")
+        return
     with SessionLocal() as db:
         if cmd == "sweep":
             from app.admin import service as admin

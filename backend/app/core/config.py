@@ -54,6 +54,9 @@ class Settings(BaseSettings):
 
     # Notificações push (app mobile, via Expo Push Service)
     expo_access_token: str = ""
+    # Web Push (navegador / app instalado pelo Chrome). Gere com: python -m app.cli vapid-keys
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
 
     # E-mail (SMTP): lembretes, convites e alertas. Na Vercel use a porta 587 ou 465.
     smtp_host: str = ""
@@ -85,6 +88,10 @@ class Settings(BaseSettings):
     @property
     def is_dev(self) -> bool:
         return self.env in ("dev", "test")
+
+    @property
+    def web_push_enabled(self) -> bool:
+        return bool(self.vapid_public_key and self.vapid_private_key)
 
     @property
     def web_url(self) -> str:

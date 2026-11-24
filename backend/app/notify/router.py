@@ -19,12 +19,29 @@ class PushTokenIn(BaseModel):
 
 
 class PushTokenRemoveIn(BaseModel):
-    token: str = Field(max_length=255)
+    token: str = Field(max_length=1024)
+
+
+class WebPushKeys(BaseModel):
+    p256dh: str = Field(min_length=20, max_length=128)
+    auth: str = Field(min_length=8, max_length=64)
+
+
+class WebPushIn(BaseModel):
+    """Formato de PushSubscription.toJSON() do navegador."""
+
+    endpoint: str = Field(max_length=1024)
+    keys: WebPushKeys
 
 
 @router.post("", status_code=204, dependencies=[Depends(RateLimit("push_token", times=30, seconds=600))])
 def register_push_token(body: PushTokenIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> None:
     service.register_token(db, user, body.token, body.platform)
+
+
+@router.post("/web", status_code=204, dependencies=[Depends(RateLimit("push_token", times=30, seconds=600))])
+def register_web_push(body: WebPushIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> None:
+    service.register_web_subscription(db, user, body.endpoint, body.keys.p256dh, body.keys.auth)
 
 
 @router.post("/unregister", status_code=204)

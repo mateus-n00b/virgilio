@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppDownload } from "@/components/AppDownload";
+import { PushOptIn } from "@/components/PushOptIn";
 import { Alert, Badge, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -129,6 +130,7 @@ function Dashboard({ user }: { user: User }) {
   return (
     <div className="stack narrow" style={{ maxWidth: 620 }}>
       <h1>Olá, {user.name.split(" ")[0]}.</h1>
+      <PushOptIn variant="banner" />
       <Alert>{error}</Alert>
       <Alert kind="success">{done}</Alert>
 

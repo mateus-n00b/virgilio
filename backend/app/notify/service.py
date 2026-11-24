@@ -7,11 +7,12 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.db import utcnow
 from app.core.errors import AppError
 from app.core.mailer import mail_configured, send_email
 from app.guardians.models import Guardian, GuardianStatus
-from app.notify import messages, push
+from app.notify import messages, push, webpush
 from app.notify.models import Delivery, DeliveryChannel, DeliveryKind, DeliveryStatus, PushToken
 from app.users.models import User, UserStatus
 from app.watch.models import Alert, AlertStatus, Watch, WatchState
@@ -41,6 +42,32 @@ def register_token(db: Session, user: User, token: str, platform: str) -> None:
         db.rollback()  # o mesmo aparelho registrado em paralelo; o outro registro vale
 
 
+def register_web_subscription(db: Session, user: User, endpoint: str, p256dh: str, auth: str) -> None:
+    """Inscrição Web Push do navegador (Chrome/Android, app instalado ou não)."""
+    if not get_settings().web_push_enabled:
+        raise AppError(503, "web_push_disabled", "Notificações no navegador ainda não configuradas.")
+    if not webpush.valid_endpoint(endpoint):
+        raise AppError(422, "invalid_push_token", "Inscrição de notificação inválida.")
+    now = utcnow()
+    row = db.scalar(select(PushToken).where(PushToken.token == endpoint))
+    if row is None:
+        db.add(PushToken(user_id=user.id, token=endpoint, platform="web", web_p256dh=p256dh, web_auth=auth, created_at=now, last_seen_at=now))
+    else:
+        row.user_id, row.platform, row.web_p256dh, row.web_auth, row.last_seen_at, row.disabled_at = user.id, "web", p256dh, auth, now, None
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+
+
+def _active_tokens():
+    """Aparelhos ativos; inscrições web só contam se o Web Push estiver configurado."""
+    q = select(PushToken).where(PushToken.disabled_at.is_(None))
+    if not get_settings().web_push_enabled:
+        q = q.where(PushToken.platform != "web")
+    return q
+
+
 def unregister_token(db: Session, user: User, token: str) -> None:
     db.execute(delete(PushToken).where(PushToken.token == token, PushToken.user_id == user.id))
     db.commit()
@@ -49,7 +76,7 @@ def unregister_token(db: Session, user: User, token: str) -> None:
 def has_device(db: Session, user_id: int | None) -> bool:
     if user_id is None:
         return False
-    return db.scalar(select(PushToken.id).where(PushToken.user_id == user_id, PushToken.disabled_at.is_(None)).limit(1)) is not None
+    return db.scalar(_active_tokens().where(PushToken.user_id == user_id).limit(1)) is not None
 
 
 # ------------------------------------------------------------------ fila (sem commit: na transação do evento)
@@ -135,6 +162,25 @@ def _build(d: Delivery, user: User, guardian: Guardian | None, alert: Alert | No
     return messages.invite(user, guardian)
 
 
+def _web_payload(p: dict) -> dict:
+    """Mesmo texto do app nativo; a rota (/ ou /protegidos/<token>) existe igual no site."""
+    url = p["data"]["url"]
+    return {"title": p["title"], "body": p["body"], "url": url, "tag": url}
+
+
+def _send_all(flat: list[tuple[Delivery, PushToken, dict]]) -> list[dict]:
+    """Expo em lote; Web Push um a um. Tickets na mesma ordem de `flat`."""
+    tickets: list[dict | None] = [None] * len(flat)
+    expo = [i for i, (_, t, _) in enumerate(flat) if t.platform != "web"]
+    if expo:
+        for i, ticket in zip(expo, push.send([flat[i][2] for i in expo])):
+            tickets[i] = ticket
+    for i, (_, t, m) in enumerate(flat):
+        if t.platform == "web":
+            tickets[i] = webpush.send({"endpoint": t.token, "keys": {"p256dh": t.web_p256dh, "auth": t.web_auth}}, m)
+    return tickets  # type: ignore[return-value]
+
+
 def dispatch(db: Session, *, limit: int = 1000) -> dict[str, int]:
     """Envia os avisos pendentes e registra o resultado. Pode rodar em paralelo (linhas travadas)."""
     now = utcnow()
@@ -194,7 +240,7 @@ def dispatch(db: Session, *, limit: int = 1000) -> dict[str, int]:
             continue
 
         recipient_id = user.id if d.kind == DeliveryKind.REMINDER else guardian.linked_user_id
-        tokens = list(db.scalars(select(PushToken).where(PushToken.user_id == recipient_id, PushToken.disabled_at.is_(None)))) if recipient_id else []
+        tokens = list(db.scalars(_active_tokens().where(PushToken.user_id == recipient_id))) if recipient_id else []
         if not tokens:
             skip(d, "no_device")
             continue
@@ -209,8 +255,8 @@ def dispatch(db: Session, *, limit: int = 1000) -> dict[str, int]:
         outgoing.append((d, tokens, payload))
 
     if outgoing:
-        flat = [(d, t, {**p, "to": t.token}) for d, tokens, p in outgoing for t in tokens]
-        tickets = push.send([m for _, _, m in flat])
+        flat = [(d, t, _web_payload(p) if t.platform == "web" else {**p, "to": t.token}) for d, tokens, p in outgoing for t in tokens]
+        tickets = _send_all(flat)
         results: dict[int, list[str]] = defaultdict(list)
         for (d, token, _), ticket in zip(flat, tickets):
             if ticket.get("status") == "ok":
