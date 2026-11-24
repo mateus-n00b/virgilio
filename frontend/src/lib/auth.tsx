@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { api, getToken, setToken } from "./api";
+import { api, ApiError, getToken, setToken } from "./api";
 import type { AuthResponse, User } from "./types";
 
 interface AuthState {
@@ -29,8 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       setUser(await api<User>("/auth/me"));
-    } catch {
-      setToken(null);
+    } catch (e) {
+      // Só sai da conta se a API recusar a sessão; queda de rede (ou navegação no meio) não desloga ninguém.
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) setToken(null);
       setUser(null);
     } finally {
       setLoading(false);

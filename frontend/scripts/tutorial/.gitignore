@@ -1,0 +1,5 @@
+demo.db
+seed.json
+out/
+node_modules/
+package*.json

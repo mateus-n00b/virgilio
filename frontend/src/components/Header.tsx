@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { A11yMenu } from "@/components/A11yControls";
 import { useAuth } from "@/lib/auth";
 
 export function Header() {
@@ -28,6 +29,7 @@ export function Header() {
               {link("/virgilios", "Meus Virgílios")}
               {link("/instrucoes", "Instruções")}
               {link("/protegidos", "Protegidos")}
+              {link("/ajuda", "Ajuda")}
               {user.is_admin && link("/admin", "Admin")}
               {link("/conta", user.name.split(" ")[0])}
               <button
@@ -43,12 +45,14 @@ export function Header() {
             </>
           ) : (
             <>
+              {link("/ajuda", "Como usar")}
               {link("/entrar", "Entrar")}
               <Link href="/entrar?criar=1" className="btn small">
                 Criar conta
               </Link>
             </>
           )}
+          <A11yMenu />
         </nav>
       </div>
     </header>

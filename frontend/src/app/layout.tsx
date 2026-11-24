@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { AppDownload } from "@/components/AppDownload";
 import { Header } from "@/components/Header";
+import { A11Y_BOOT } from "@/lib/a11y";
 import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
@@ -15,7 +16,10 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: A11Y_BOOT }} />
+      </head>
       <body>
         <AuthProvider>
           <Header />
@@ -26,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 © Virgílio · <em>ninguém atravessa sozinho</em>
               </span>
               <span className="row">
+                <Link href="/ajuda">Como usar</Link>
                 <AppDownload variant="link" />
                 <Link href="/termos">Termos de Uso</Link>
                 <Link href="/privacidade">Política de Privacidade</Link>

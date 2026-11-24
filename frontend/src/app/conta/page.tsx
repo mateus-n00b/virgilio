@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { A11yControls } from "@/components/A11yControls";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Alert, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -223,6 +224,11 @@ export default function AccountPage() {
           <h1>Conta</h1>
           <Cycle />
           <Profile user={user} />
+          <section className="card" id="leitura">
+            <h2>Leitura</h2>
+            <p className="muted small">Letra maior e alto contraste para enxergar melhor. Vale só neste aparelho.</p>
+            <A11yControls />
+          </section>
           <Password />
           <DeleteAccount />
         </div>
